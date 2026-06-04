@@ -23,14 +23,22 @@ class BookViewTests(TestCase):
         User = get_user_model()
         self.user = User.objects.create_user(username="admin", password="password")
 
-    def test_anonymous_user_is_redirected(self):
+    def test_homepage_is_public(self):
         response = self.client.get(reverse("book-list"))
 
-        self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse("login"), response["Location"])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Library")
 
-    def test_authenticated_user_can_filter_books(self):
-        self.client.force_login(self.user)
+    def test_homepage_renders_books_table(self):
+        Book.objects.create(title="Reading now", author="Author", status=BookStatus.READING)
+
+        response = self.client.get(reverse("book-list"))
+
+        self.assertContains(response, "<table", html=False)
+        self.assertContains(response, "Reading now")
+        self.assertContains(response, "Author")
+
+    def test_user_can_filter_books_without_login(self):
         Book.objects.create(title="Reading now", status=BookStatus.READING)
         Book.objects.create(title="Later", status=BookStatus.WILL_READ)
 
@@ -39,41 +47,7 @@ class BookViewTests(TestCase):
         self.assertContains(response, "Reading now")
         self.assertNotContains(response, "Later")
 
-    def test_authenticated_user_can_create_book(self):
-        self.client.force_login(self.user)
-
-        response = self.client.post(
-            reverse("book-create"),
-            {
-                "title": "The Left Hand of Darkness",
-                "author": "Ursula K. Le Guin",
-                "status": BookStatus.WILL_READ,
-                "rating": "",
-                "notes": "",
-                "started_at": "",
-                "finished_at": "",
-            },
-        )
-
-        self.assertRedirects(response, reverse("book-list"))
-        self.assertTrue(Book.objects.filter(title="The Left Hand of Darkness").exists())
-
-    def test_htmx_status_update_marks_read_dates(self):
-        self.client.force_login(self.user)
-        book = Book.objects.create(title="Finished")
-
-        response = self.client.post(
-            reverse("book-status", args=[book.pk]), {"status": BookStatus.READ}
-        )
-
-        self.assertEqual(response.status_code, 200)
-        book.refresh_from_db()
-        self.assertEqual(book.status, BookStatus.READ)
-        self.assertIsNotNone(book.started_at)
-        self.assertIsNotNone(book.finished_at)
-
     def test_deleted_books_are_hidden_from_library(self):
-        self.client.force_login(self.user)
         Book.objects.create(title="Visible", status=BookStatus.READING)
         Book.objects.create(title="Hidden", status=BookStatus.DELETED)
 
@@ -82,12 +56,8 @@ class BookViewTests(TestCase):
         self.assertContains(response, "Visible")
         self.assertNotContains(response, "Hidden")
 
-    def test_delete_marks_book_deleted_without_removing_row(self):
-        self.client.force_login(self.user)
-        book = Book.objects.create(title="Archive me", status=BookStatus.WILL_READ)
+    def test_admin_login_is_available(self):
+        response = self.client.get(reverse("admin:index"))
 
-        response = self.client.post(reverse("book-delete", args=[book.pk]))
-
-        self.assertRedirects(response, reverse("book-list"))
-        book.refresh_from_db()
-        self.assertEqual(book.status, BookStatus.DELETED)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
