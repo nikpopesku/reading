@@ -63,7 +63,7 @@ jobs:
             mkdir -p /home/spacer/reading
 
             postgres_uid="$(getent passwd postgres | cut -d: -f3)"
-            docker run --rm \
+            docker run --rm -i \
               --user "$postgres_uid" \
               -v /var/run/postgresql:/var/run/postgresql \
               postgres:17-alpine \

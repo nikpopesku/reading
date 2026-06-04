@@ -100,7 +100,7 @@ jobs:
 
             PROD_DB_PASSWORD="$(decode "$PROD_DB_PASSWORD_B64")"
             postgres_uid="$(getent passwd postgres | cut -d: -f3)"
-            docker run --rm \
+            docker run --rm -i \
               --user "$postgres_uid" \
               -v /var/run/postgresql:/var/run/postgresql \
               postgres:17-alpine \
