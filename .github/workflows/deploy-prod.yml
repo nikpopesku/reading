@@ -1,0 +1,154 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_TAG: prod-${{ github.sha }}
+      PROD_DB_NAME: reading
+      PROD_DB_USER: reading
+      DJANGO_SECRET_KEY_SECRET_NAME: reading_django_secret_key_${{ github.run_id }}_${{ github.run_attempt }}
+      DATABASE_URL_SECRET_NAME: reading_database_url_${{ github.run_id }}_${{ github.run_attempt }}
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v7.2.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/nikpopesku/reading-web:latest
+            ghcr.io/nikpopesku/reading-web:${{ env.IMAGE_TAG }}
+
+      - name: Encode production secrets for SSH
+        shell: bash
+        env:
+          PROD_DJANGO_SECRET_KEY: ${{ secrets.PROD_DJANGO_SECRET_KEY }}
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+        run: |
+          require_secret() {
+            if [ -z "${!1}" ]; then
+              echo "::error::Missing required prod environment secret: $1"
+              exit 1
+            fi
+          }
+          encode_env() {
+            printf '%s=%s\n' "$1" "$(printf '%s' "$2" | base64 -w0)" >> "$GITHUB_ENV"
+          }
+          require_secret PROD_DJANGO_SECRET_KEY
+          require_secret PROD_DATABASE_URL
+          require_secret PROD_DB_PASSWORD
+          encode_env PROD_DJANGO_SECRET_KEY_B64 "$PROD_DJANGO_SECRET_KEY"
+          encode_env PROD_DATABASE_URL_B64 "$PROD_DATABASE_URL"
+          encode_env PROD_DB_PASSWORD_B64 "$PROD_DB_PASSWORD"
+
+      - name: Copy stack file to Titan
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.TITAN_HOST }}
+          username: ${{ secrets.TITAN_USER }}
+          key: ${{ secrets.TITAN_SSH_KEY }}
+          source: docker-stack.prod.yml
+          target: /home/spacer/reading
+          strip_components: 0
+
+      - name: Deploy to Titan (prod)
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          PROD_DB_NAME: ${{ env.PROD_DB_NAME }}
+          PROD_DB_USER: ${{ env.PROD_DB_USER }}
+          PROD_DB_PASSWORD_B64: ${{ env.PROD_DB_PASSWORD_B64 }}
+          PROD_DJANGO_SECRET_KEY_B64: ${{ env.PROD_DJANGO_SECRET_KEY_B64 }}
+          PROD_DATABASE_URL_B64: ${{ env.PROD_DATABASE_URL_B64 }}
+          DJANGO_SECRET_KEY_SECRET_NAME: ${{ env.DJANGO_SECRET_KEY_SECRET_NAME }}
+          DATABASE_URL_SECRET_NAME: ${{ env.DATABASE_URL_SECRET_NAME }}
+        with:
+          host: ${{ secrets.TITAN_HOST }}
+          username: ${{ secrets.TITAN_USER }}
+          key: ${{ secrets.TITAN_SSH_KEY }}
+          envs: IMAGE_TAG,PROD_DB_NAME,PROD_DB_USER,PROD_DB_PASSWORD_B64,PROD_DJANGO_SECRET_KEY_B64,PROD_DATABASE_URL_B64,DJANGO_SECRET_KEY_SECRET_NAME,DATABASE_URL_SECRET_NAME
+          script: |
+            set -eu
+            mkdir -p /home/spacer/reading
+            decode() { printf '%s' "$1" | base64 -d; }
+            create_secret() {
+              name="$1"
+              value_b64="$2"
+              if docker secret inspect "$name" >/dev/null 2>&1; then
+                return
+              fi
+              decode "$value_b64" | docker secret create --label app=reading --label environment=prod "$name" -
+            }
+
+            PROD_DB_PASSWORD="$(decode "$PROD_DB_PASSWORD_B64")"
+            postgres_uid="$(getent passwd postgres | cut -d: -f3)"
+            docker run --rm \
+              --user "$postgres_uid" \
+              -v /var/run/postgresql:/var/run/postgresql \
+              postgres:17-alpine \
+              psql -h /var/run/postgresql -U postgres -d postgres \
+              -v ON_ERROR_STOP=1 \
+              -v db_name="$PROD_DB_NAME" \
+              -v db_user="$PROD_DB_USER" \
+              -v db_password="$PROD_DB_PASSWORD" <<'SQL'
+            SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'db_user', :'db_password')
+            WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'db_user')
+            \gexec
+            ALTER ROLE :"db_user" WITH PASSWORD :'db_password';
+            SELECT format('CREATE DATABASE %I OWNER %I', :'db_name', :'db_user')
+            WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name')
+            \gexec
+            SQL
+
+            create_secret "$DJANGO_SECRET_KEY_SECRET_NAME" "$PROD_DJANGO_SECRET_KEY_B64"
+            create_secret "$DATABASE_URL_SECRET_NAME" "$PROD_DATABASE_URL_B64"
+
+            docker pull "ghcr.io/nikpopesku/reading-web:$IMAGE_TAG"
+            cd /home/spacer/reading
+            IMAGE_TAG="$IMAGE_TAG" \
+              DJANGO_SECRET_KEY_SECRET_NAME="$DJANGO_SECRET_KEY_SECRET_NAME" \
+              DATABASE_URL_SECRET_NAME="$DATABASE_URL_SECRET_NAME" \
+              docker stack deploy -c docker-stack.prod.yml reading --with-registry-auth
+
+            web_container=""
+            for attempt in $(seq 1 30); do
+              for container in $(docker ps -q -f label=com.docker.swarm.service.name=reading_web); do
+                container_image="$(docker inspect --format '{{.Config.Image}}' "$container")"
+                if [ "${container_image#ghcr.io/nikpopesku/reading-web:$IMAGE_TAG}" != "$container_image" ]; then
+                  web_container="$container"
+                  break
+                fi
+              done
+              [ -n "$web_container" ] && break
+              sleep 2
+            done
+
+            if [ -z "${web_container:-}" ]; then
+              docker service ps reading_web --no-trunc
+              exit 1
+            fi
+
+            docker exec "$web_container" sh -lc '
+              export DJANGO_SECRET_KEY="$(cat /run/secrets/reading_django_secret_key)"
+              export DATABASE_URL="$(cat /run/secrets/reading_database_url)"
+              python manage.py migrate --noinput
+            '
+            docker service ls --filter label=com.docker.stack.namespace=reading

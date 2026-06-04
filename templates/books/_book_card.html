@@ -1,0 +1,23 @@
+<article class="book-card" id="book-{{ book.id }}">
+  <div class="book-main">
+    <span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span>
+    <h2>{{ book.title }}</h2>
+    {% if book.author %}<p class="muted">{{ book.author }}</p>{% endif %}
+    {% if book.notes %}<p>{{ book.notes|linebreaksbr }}</p>{% endif %}
+  </div>
+  <dl class="book-meta">
+    {% if book.started_at %}<div><dt>Started</dt><dd>{{ book.started_at }}</dd></div>{% endif %}
+    {% if book.finished_at %}<div><dt>Finished</dt><dd>{{ book.finished_at }}</dd></div>{% endif %}
+    {% if book.rating %}<div><dt>Rating</dt><dd>{{ book.rating }}/5</dd></div>{% endif %}
+  </dl>
+  <form class="status-actions" hx-post="{% url 'book-status' book.pk %}" hx-target="#book-{{ book.id }}" hx-swap="outerHTML">
+    {% csrf_token %}
+    {% for status in statuses %}
+      <button type="submit" name="status" value="{{ status.value }}" {% if book.status == status.value %}disabled{% endif %}>{{ status.label }}</button>
+    {% endfor %}
+  </form>
+  <div class="card-actions">
+    <a href="{% url 'book-update' book.pk %}">Edit</a>
+    <a href="{% url 'book-delete' book.pk %}">Delete</a>
+  </div>
+</article>

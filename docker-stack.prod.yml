@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  web:
+    image: ghcr.io/nikpopesku/reading-web:${IMAGE_TAG:-latest}
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: reading.a007.bid
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://reading.a007.bid
+      DJANGO_SECRET_KEY: /run/secrets/reading_django_secret_key
+      DATABASE_URL: /run/secrets/reading_database_url
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    secrets:
+      - source: reading_django_secret_key
+        target: reading_django_secret_key
+      - source: reading_database_url
+        target: reading_database_url
+    networks:
+      - default
+      - traefik
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      update_config:
+        order: start-first
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik"
+        - "traefik.http.services.reading-prod.loadbalancer.server.port=8000"
+        - "traefik.http.routers.reading-prod-http.rule=Host(`reading.a007.bid`)"
+        - "traefik.http.routers.reading-prod-http.entrypoints=web"
+        - "traefik.http.routers.reading-prod-http.middlewares=redirect-http-www@file"
+        - "traefik.http.routers.reading-prod-https.rule=Host(`reading.a007.bid`)"
+        - "traefik.http.routers.reading-prod-https.entrypoints=websecure"
+        - "traefik.http.routers.reading-prod-https.tls=true"
+        - "traefik.http.routers.reading-prod-https.tls.certresolver=myresolver"
+
+networks:
+  default:
+    driver: overlay
+  traefik:
+    external: true
+
+secrets:
+  reading_django_secret_key:
+    external: true
+    name: ${DJANGO_SECRET_KEY_SECRET_NAME:-reading_django_secret_key}
+  reading_database_url:
+    external: true
+    name: ${DATABASE_URL_SECRET_NAME:-reading_database_url}

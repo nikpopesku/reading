@@ -1,0 +1,25 @@
+services:
+  web:
+    container_name: reading-web
+    build: .
+    environment:
+      DJANGO_ALLOWED_HOSTS: readingorion.a007.bid
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://readingorion.a007.bid
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.orion}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.reading-orion.rule=Host(`readingorion.a007.bid`)"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.reading-orion.entrypoints=https"
+      - "traefik.http.routers.reading-orion.tls=true"
+      - "traefik.http.services.reading-orion.loadbalancer.server.port=8000"
+    networks:
+      - default
+      - traefik
+      - postgres
+
+networks:
+  traefik:
+    external: true
+  postgres:
+    external: true
