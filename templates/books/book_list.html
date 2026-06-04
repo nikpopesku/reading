@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load book_extras %}
+
+{% block title %}Library - Reading{% endblock %}
+
+{% block content %}
+<section class="library-header">
+  <div>
+    <h1>Library</h1>
+    <p>{{ total_count }} book{{ total_count|pluralize }}</p>
+  </div>
+  <a class="primary-button" href="{% url 'book-create' %}">Add book</a>
+</section>
+
+<nav class="tabs" aria-label="Book status filters">
+  <a class="tab {% if not selected_status %}active{% endif %}" href="{% url 'book-list' %}">All <span>{{ total_count }}</span></a>
+  {% for status in statuses %}
+    <a class="tab {% if selected_status == status.value %}active{% endif %}" href="{% url 'book-list' %}?status={{ status.value }}">{{ status.label }} <span>{{ counts|get_item:status.value }}</span></a>
+  {% endfor %}
+</nav>
+
+<section class="book-grid">
+  {% for book in books %}
+    {% include "books/_book_card.html" with book=book statuses=statuses %}
+  {% empty %}
+    <div class="empty-state">
+      <h2>No books here yet</h2>
+      <a class="primary-button" href="{% url 'book-create' %}">Add your first book</a>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

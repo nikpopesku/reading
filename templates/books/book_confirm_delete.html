@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Delete book - Reading{% endblock %}
+
+{% block content %}
+<section class="form-panel">
+  <h1>Delete book</h1>
+  <p>Delete {{ object.title }}?</p>
+  <form method="post" class="button-row">
+    {% csrf_token %}
+    <button type="submit" class="danger-button">Delete</button>
+    <a href="{% url 'book-list' %}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

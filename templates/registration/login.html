@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Log in - Reading{% endblock %}
+
+{% block content %}
+<section class="auth-panel">
+  <h1>Log in</h1>
+  <form method="post" class="form-stack">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="primary-button">Log in</button>
+  </form>
+</section>
+{% endblock %}

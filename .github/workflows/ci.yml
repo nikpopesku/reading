@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  django-checks:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: reading_test
+          POSTGRES_USER: reading
+          POSTGRES_PASSWORD: reading
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Django checks
+        env:
+          DJANGO_DEBUG: "1"
+          DJANGO_SECRET_KEY: testsecret
+          DATABASE_URL: postgresql://reading:reading@127.0.0.1:5432/reading_test?sslmode=disable
+        run: uv run python manage.py check
+
+      - name: Check migrations are current
+        env:
+          DJANGO_DEBUG: "1"
+          DJANGO_SECRET_KEY: testsecret
+          DATABASE_URL: postgresql://reading:reading@127.0.0.1:5432/reading_test?sslmode=disable
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Run migrations
+        env:
+          DJANGO_DEBUG: "1"
+          DJANGO_SECRET_KEY: testsecret
+          DATABASE_URL: postgresql://reading:reading@127.0.0.1:5432/reading_test?sslmode=disable
+        run: uv run python manage.py migrate --noinput
+
+      - name: Run tests
+        env:
+          DJANGO_DEBUG: "1"
+          DJANGO_SECRET_KEY: testsecret
+          DATABASE_URL: postgresql://reading:reading@127.0.0.1:5432/reading_test?sslmode=disable
+        run: uv run python manage.py test
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Build Docker image
+        uses: docker/build-push-action@v7.2.0
+        with:
+          context: .
+          push: false
+          tags: ghcr.io/nikpopesku/reading-web:ci
