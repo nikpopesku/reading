@@ -3,6 +3,8 @@ services:
     container_name: reading-web
     build: .
     environment:
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env.orion}
       DJANGO_ALLOWED_HOSTS: readingorion.a007.bid
       DJANGO_CSRF_TRUSTED_ORIGINS: https://readingorion.a007.bid
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.orion}
