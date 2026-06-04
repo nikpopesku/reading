@@ -126,7 +126,7 @@ jobs:
             IMAGE_TAG="$IMAGE_TAG" \
               DJANGO_SECRET_KEY_SECRET_NAME="$DJANGO_SECRET_KEY_SECRET_NAME" \
               DATABASE_URL_SECRET_NAME="$DATABASE_URL_SECRET_NAME" \
-              docker stack deploy -c docker-stack.prod.yml reading --with-registry-auth
+              docker stack deploy --detach=true -c docker-stack.prod.yml reading --with-registry-auth
 
             web_container=""
             for attempt in $(seq 1 30); do
