@@ -13,11 +13,13 @@ Personal reading tracker for books that are planned, in progress, or finished.
 
 ## Local development
 
-Create an env file:
+Create an ignored local env file and fill in secret values:
 
 ```sh
-cp .env.example .env
+cp .env.example .env.local
 ```
+
+Set `POSTGRES_PASSWORD` and `DATABASE_URL` in `.env.local`; do not commit those values.
 
 Run locally behind Traefik:
 
@@ -31,7 +33,10 @@ Open `https://readinglocal.a007.bid`.
 
 ## Orion
 
+Create an ignored Orion env file with `DATABASE_URL`, then start the app:
+
 ```sh
+cp .env.example .env.orion
 make orion-up
 ```
 

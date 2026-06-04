@@ -71,3 +71,23 @@ class BookViewTests(TestCase):
         self.assertEqual(book.status, BookStatus.READ)
         self.assertIsNotNone(book.started_at)
         self.assertIsNotNone(book.finished_at)
+
+    def test_deleted_books_are_hidden_from_library(self):
+        self.client.force_login(self.user)
+        Book.objects.create(title="Visible", status=BookStatus.READING)
+        Book.objects.create(title="Hidden", status=BookStatus.DELETED)
+
+        response = self.client.get(reverse("book-list"))
+
+        self.assertContains(response, "Visible")
+        self.assertNotContains(response, "Hidden")
+
+    def test_delete_marks_book_deleted_without_removing_row(self):
+        self.client.force_login(self.user)
+        book = Book.objects.create(title="Archive me", status=BookStatus.WILL_READ)
+
+        response = self.client.post(reverse("book-delete", args=[book.pk]))
+
+        self.assertRedirects(response, reverse("book-list"))
+        book.refresh_from_db()
+        self.assertEqual(book.status, BookStatus.DELETED)

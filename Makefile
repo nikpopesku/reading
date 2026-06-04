@@ -1,5 +1,5 @@
-COMPOSE_LOCAL = docker compose -f docker-compose-local.yml
-COMPOSE_ORION = docker compose -f docker-compose-orion.yml
+COMPOSE_LOCAL = docker compose --env-file .env.local -f docker-compose-local.yml
+COMPOSE_ORION = docker compose --env-file .env.orion -f docker-compose-orion.yml
 
 .PHONY: local-up local-down orion-up orion-down shell migrate createsuperuser test lint format check
 

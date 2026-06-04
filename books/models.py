@@ -6,6 +6,10 @@ class BookStatus(models.TextChoices):
     WILL_READ = "will_read", "Will read"
     READING = "reading", "Reading"
     READ = "read", "Read"
+    DELETED = "deleted", "Deleted"
+
+
+ACTIVE_BOOK_STATUSES = (BookStatus.WILL_READ, BookStatus.READING, BookStatus.READ)
 
 
 class Book(models.Model):

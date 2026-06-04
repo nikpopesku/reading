@@ -12,7 +12,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev
 
 COPY . .
-RUN python manage.py collectstatic --noinput
+RUN DJANGO_DEBUG=1 python manage.py collectstatic --noinput
 
 RUN addgroup --system app && adduser --system --ingroup app app
 USER app

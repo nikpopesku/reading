@@ -14,8 +14,13 @@ def env_value(name: str, default: str = "") -> str:
     return value
 
 
-SECRET_KEY = env_value("DJANGO_SECRET_KEY", "dev-insecure-reading-secret")
 DEBUG = os.environ.get("DJANGO_DEBUG", "0") in {"1", "true", "True", "yes"}
+SECRET_KEY = env_value("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "local-development-placeholder"
+    else:
+        raise RuntimeError("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is disabled")
 
 _ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 ALLOWED_HOSTS = [host.strip() for host in _ALLOWED_HOSTS.split(",") if host.strip()]

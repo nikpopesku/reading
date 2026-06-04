@@ -28,6 +28,7 @@ class Migration(migrations.Migration):
                             ("will_read", "Will read"),
                             ("reading", "Reading"),
                             ("read", "Read"),
+                            ("deleted", "Deleted"),
                         ],
                         db_index=True,
                         default="will_read",

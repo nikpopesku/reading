@@ -5,7 +5,7 @@ services:
     environment:
       DJANGO_ALLOWED_HOSTS: readingorion.a007.bid
       DJANGO_CSRF_TRUSTED_ORIGINS: https://readingorion.a007.bid
-      DATABASE_URL: postgresql://reading:reading@172.21.0.1:5432/reading?sslmode=prefer
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.orion}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.reading-orion.rule=Host(`readingorion.a007.bid`)"
