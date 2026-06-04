@@ -146,9 +146,5 @@ jobs:
               exit 1
             fi
 
-            docker exec "$web_container" sh -lc '
-              export DJANGO_SECRET_KEY="$(cat /run/secrets/reading_django_secret_key)"
-              export DATABASE_URL="$(cat /run/secrets/reading_database_url)"
-              python manage.py migrate --noinput
-            '
+            docker exec "$web_container" python manage.py migrate --noinput
             docker service ls --filter label=com.docker.stack.namespace=reading
