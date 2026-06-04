@@ -9,7 +9,6 @@
     <h1>Library</h1>
     <p>{{ total_count }} book{{ total_count|pluralize }}</p>
   </div>
-  <a class="primary-button" href="{% url 'book-create' %}">Add book</a>
 </section>
 
 <nav class="tabs" aria-label="Book status filters">
@@ -19,14 +18,36 @@
   {% endfor %}
 </nav>
 
-<section class="book-grid">
-  {% for book in books %}
-    {% include "books/_book_card.html" with book=book statuses=statuses %}
-  {% empty %}
-    <div class="empty-state">
-      <h2>No books here yet</h2>
-      <a class="primary-button" href="{% url 'book-create' %}">Add your first book</a>
-    </div>
-  {% endfor %}
+<section class="table-wrap">
+  <table class="book-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Status</th>
+        <th>Started</th>
+        <th>Finished</th>
+        <th>Rating</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for book in books %}
+        <tr>
+          <td>{{ book.title }}</td>
+          <td>{{ book.author|default:"-" }}</td>
+          <td><span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span></td>
+          <td>{{ book.started_at|default:"-" }}</td>
+          <td>{{ book.finished_at|default:"-" }}</td>
+          <td>{% if book.rating %}{{ book.rating }}/5{% else %}-{% endif %}</td>
+          <td>{{ book.notes|default:"-"|linebreaksbr }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="7" class="empty-cell">No books yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </section>
 {% endblock %}
