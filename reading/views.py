@@ -22,7 +22,7 @@ def book_list(request):
 
     return render(
         request,
-        "books/book_list.html",
+        "reading/book_list.html",
         {
             "books": books,
             "statuses": ACTIVE_BOOK_STATUSES,

@@ -21,9 +21,9 @@ dev = [
 package = false
 
 [tool.coverage.run]
-source = ["books", "reading_project"]
+source = ["reading", "reading_project"]
 omit = [
-    "books/migrations/*",
+    "reading/migrations/*",
     "manage.py",
     "reading_project/asgi.py",
     "reading_project/wsgi.py",
@@ -38,4 +38,4 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 ignore = ["DJ001"]
 
 [tool.ruff.lint.per-file-ignores]
-"books/migrations/*" = ["E501"]
+"reading/migrations/*" = ["E501"]
