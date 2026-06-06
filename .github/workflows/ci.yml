@@ -1,8 +1,10 @@
 name: CI
 
 on:
-  pull_request:
+  push:
     branches: [master]
+  pull_request:
+    branches: ["**"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -70,12 +72,24 @@ jobs:
           DATABASE_URL: postgresql://reading:reading@127.0.0.1:5432/reading_test?sslmode=disable
         run: uv run python manage.py migrate --noinput
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           DJANGO_DEBUG: "1"
           DJANGO_SECRET_KEY: testsecret
           DATABASE_URL: postgresql://reading:reading@127.0.0.1:5432/reading_test?sslmode=disable
-        run: uv run python manage.py test
+        run: uv run coverage run manage.py test
+
+      - name: Generate coverage report
+        run: uv run coverage xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6.0.1
+        with:
+          fail_ci_if_error: true
+          files: ./coverage.xml
+          flags: unit
+          name: django-tests
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   docker-build:
     runs-on: ubuntu-latest
