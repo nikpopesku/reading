@@ -13,11 +13,21 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "coverage[toml]>=7.0,<8.0",
     "ruff>=0.14,<0.15",
 ]
 
 [tool.uv]
 package = false
+
+[tool.coverage.run]
+source = ["books", "reading_project"]
+omit = [
+    "books/migrations/*",
+    "manage.py",
+    "reading_project/asgi.py",
+    "reading_project/wsgi.py",
+]
 
 [tool.ruff]
 line-length = 100

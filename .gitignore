@@ -12,6 +12,10 @@ venv/
 staticfiles/
 media/
 
+# Coverage
+.coverage
+coverage.xml
+
 # Editors
 .idea/
 .vscode/
