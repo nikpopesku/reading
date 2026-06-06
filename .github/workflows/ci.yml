@@ -4,7 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
-    branches: [master]
+    branches: ["**"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -85,6 +85,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6.0.1
         with:
+          fail_ci_if_error: true
           files: ./coverage.xml
           flags: unit
           name: django-tests
