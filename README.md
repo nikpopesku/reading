@@ -2,6 +2,8 @@
 
 Personal reading tracker for books that are planned, in progress, or finished.
 
+**Live:** <https://reading.a007.bid>
+
 ## Stack
 
 - Python 3.14.5
