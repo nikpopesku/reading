@@ -26,7 +26,8 @@ class Book(models.Model):
     rating = models.PositiveSmallIntegerField(
         blank=True,
         null=True,
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Use a 1-10 scale",
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -36,8 +37,8 @@ class Book(models.Model):
         ordering = ["status", "title"]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(rating__gte=1, rating__lte=5) | models.Q(rating__isnull=True),
-                name="book_rating_between_1_and_5",
+                condition=models.Q(rating__gte=1, rating__lte=10) | models.Q(rating__isnull=True),
+                name="book_rating_between_1_and_10",
             )
         ]
 
