@@ -4,7 +4,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("reading", "0001_initial"),
+        ("books", "0001_initial"),
     ]
 
     operations = [
