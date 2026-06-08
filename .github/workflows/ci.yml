@@ -98,6 +98,7 @@ jobs:
           flags: unit
           name: django-tests
           token: ${{ secrets.CODECOV_TOKEN }}
+          skip_validation: true
 
   docker-build:
     runs-on: ubuntu-latest
