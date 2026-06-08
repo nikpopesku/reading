@@ -8,7 +8,7 @@
   <dl class="book-meta">
     {% if book.started_at %}<div><dt>Started</dt><dd>{{ book.started_at }}</dd></div>{% endif %}
     {% if book.finished_at %}<div><dt>Finished</dt><dd>{{ book.finished_at }}</dd></div>{% endif %}
-    {% if book.rating %}<div><dt>Rating</dt><dd>{{ book.rating }}/5</dd></div>{% endif %}
+    {% if book.rating %}<div><dt>Rating</dt><dd>{{ book.rating }}/10</dd></div>{% endif %}
   </dl>
   <form class="status-actions" hx-post="{% url 'book-status' book.pk %}" hx-target="#book-{{ book.id }}" hx-swap="outerHTML">
     {% csrf_token %}

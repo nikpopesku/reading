@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -16,6 +17,14 @@ class BookModelTests(TestCase):
         book = Book.objects.create(title="Sapiens")
 
         self.assertEqual(str(book), "Sapiens")
+
+    def test_book_rating_uses_ten_point_scale(self):
+        book = Book(title="Deep Work", rating=10)
+
+        book.full_clean()
+
+        with self.assertRaises(ValidationError):
+            Book(title="Invalid", rating=11).full_clean()
 
 
 class BookViewTests(TestCase):
