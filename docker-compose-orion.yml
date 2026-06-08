@@ -2,8 +2,12 @@ services:
   web:
     container_name: reading-web
     build: .
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - .:/app
+      - venv:/app/.venv
     environment:
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env.orion}
       DJANGO_ALLOWED_HOSTS: readingorion.a007.bid
       DJANGO_CSRF_TRUSTED_ORIGINS: https://readingorion.a007.bid
@@ -19,6 +23,9 @@ services:
       - default
       - traefik
       - postgres
+
+volumes:
+  venv:
 
 networks:
   traefik:
