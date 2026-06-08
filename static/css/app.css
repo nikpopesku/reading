@@ -19,20 +19,35 @@ a:hover { text-decoration: underline; }
 .brand { color: #172026; font-size: 22px; font-weight: 700; }
 .github-link {
   align-items: center;
-  border: 1px solid #dfe4dc;
+  background: #172026;
+  border: 1px solid #172026;
   border-radius: 6px;
-  color: #172026;
+  box-shadow: 0 1px 2px rgba(23, 32, 38, 0.12);
+  color: #ffffff;
   display: inline-flex;
   font-size: 14px;
-  font-weight: 600;
-  gap: 6px;
-  padding: 8px 14px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  font-weight: 700;
+  gap: 8px;
+  line-height: 1;
+  padding: 9px 14px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.github-link__icon {
+  display: block;
+  fill: currentColor;
+  height: 16px;
+  width: 16px;
 }
 .github-link:hover {
-  background: #f1f4ef;
-  border-color: #cbd4cc;
+  background: #245d63;
+  border-color: #245d63;
+  box-shadow: 0 4px 12px rgba(36, 93, 99, 0.2);
   text-decoration: none;
+  transform: translateY(-1px);
+}
+.github-link:focus-visible {
+  outline: 3px solid rgba(47, 111, 115, 0.26);
+  outline-offset: 3px;
 }
 .topbar nav { align-items: center; display: flex; gap: 18px; }
 .inline-form { display: inline; margin: 0; }
