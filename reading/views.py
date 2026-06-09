@@ -33,9 +33,7 @@ def book_list(request):
             if year_int not in years:
                 selected_year = ""
             else:
-                books = books.filter(
-                    Q(finished_at__year=year_int) | Q(started_at__year=year_int)
-                )
+                books = books.filter(Q(finished_at__year=year_int) | Q(started_at__year=year_int))
         except ValueError:
             selected_year = ""
 
