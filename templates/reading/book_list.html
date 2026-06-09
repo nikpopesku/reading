@@ -11,12 +11,25 @@
   </div>
 </section>
 
-<nav class="tabs" aria-label="Book status filters">
-  <a class="tab {% if not selected_status %}active{% endif %}" href="{% url 'book-list' %}">All <span>{{ total_count }}</span></a>
-  {% for status in statuses %}
-    <a class="tab {% if selected_status == status.value %}active{% endif %}" href="{% url 'book-list' %}?status={{ status.value }}">{{ status.label }} <span>{{ counts|get_item:status.value }}</span></a>
-  {% endfor %}
-</nav>
+<div class="filters-bar">
+  <nav class="tabs" aria-label="Book status filters">
+    <a class="tab {% if not selected_status %}active{% endif %}" href="{% url 'book-list' %}{% if selected_year %}?year={{ selected_year }}{% endif %}">All <span>{{ total_count }}</span></a>
+    {% for status in statuses %}
+      <a class="tab {% if selected_status == status.value %}active{% endif %}" href="{% url 'book-list' %}?status={{ status.value }}{% if selected_year %}&year={{ selected_year }}{% endif %}">{{ status.label }} <span>{{ counts|get_item:status.value }}</span></a>
+    {% endfor %}
+  </nav>
+  {% if years %}
+  <form method="get" action="{% url 'book-list' %}" class="year-filter-form">
+    {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+    <select name="year" onchange="this.form.submit()" aria-label="Filter by year">
+      <option value="">All years</option>
+      {% for year in years %}
+        <option value="{{ year }}" {% if selected_year == year|stringformat:"s" %}selected{% endif %}>{{ year }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+</div>
 
 <section class="table-wrap">
   <table class="book-table">
