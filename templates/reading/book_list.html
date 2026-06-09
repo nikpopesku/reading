@@ -21,6 +21,7 @@
   {% if years %}
   <form method="get" action="{% url 'book-list' %}" class="year-filter-form">
     {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+    {% if selected_rating %}<input type="hidden" name="rating" value="{{ selected_rating }}">{% endif %}
     <select name="year" onchange="this.form.submit()" aria-label="Filter by year">
       <option value="">All years</option>
       {% for year in years %}
@@ -29,6 +30,16 @@
     </select>
   </form>
   {% endif %}
+  <form method="get" action="{% url 'book-list' %}" class="rating-filter-form">
+    {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+    {% if selected_year %}<input type="hidden" name="year" value="{{ selected_year }}">{% endif %}
+    <select name="rating" onchange="this.form.submit()" aria-label="Filter by rating">
+      <option value="">All ratings</option>
+      {% for r in ratings %}
+        <option value="{{ r }}" {% if selected_rating == r|stringformat:"s" %}selected{% endif %}>{{ r }}/10</option>
+      {% endfor %}
+    </select>
+  </form>
 </div>
 
 <section class="table-wrap">
