@@ -82,6 +82,9 @@ uv run python manage.py makemigrations --check --dry-run
 - To watch a running deploy: `gh run watch`
 - To verify staging after deploy: `curl -sf https://readingstaging.a007.bid`
 
+## Rule: Read files before editing
+Always use `str_replace_editor` with `command: view` on any file before editing it with `command: str_replace`. Never call `str_replace` without having viewed the file first — `old_str` must exactly match existing content.
+
 ## Rule: Plan before implementing
 Before writing any code or making any changes, you MUST:
 1. Describe what you plan to do and why
