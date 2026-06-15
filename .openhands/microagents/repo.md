@@ -82,6 +82,14 @@ uv run python manage.py makemigrations --check --dry-run
 - To watch a running deploy: `gh run watch`
 - To verify staging after deploy: `curl -sf https://readingstaging.a007.bid`
 
+## Rule: Plan before implementing
+Before writing any code or making any changes, you MUST:
+1. Describe what you plan to do and why
+2. List the files you intend to create or modify
+3. Wait for the user to explicitly say "go ahead" or "yes" before proceeding
+
+Do not start implementing until the user approves the plan.
+
 ## Rule: Update this file at the end of every task
 Before marking any task as complete, you MUST update this file with everything new you discovered:
 - Files you read and what they do
