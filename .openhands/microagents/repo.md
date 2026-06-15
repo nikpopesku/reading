@@ -47,11 +47,6 @@ Push to `master` triggers `deploy-staging.yml`:
 4. Wait for new container with correct image tag to be running
 5. Run `python manage.py migrate --noinput` inside the new container
 
-## Secrets (GitHub Actions)
-- `SIRIUS_HOST`, `SIRIUS_USER`, `SIRIUS_SSH_KEY` — SSH access to Sirius
-- `STAGING_DATABASE_URL`, `STAGING_DB_PASSWORD`, `STAGING_DJANGO_SECRET_KEY`
-- `CODECOV_TOKEN`
-
 ## Local dev commands
 ```bash
 make local-up       # start local docker compose
@@ -81,17 +76,6 @@ uv run python manage.py makemigrations --check --dry-run
 - To trigger staging deploy manually: `gh workflow run deploy-staging.yml --ref master`
 - To watch a running deploy: `gh run watch`
 - To verify staging after deploy: `curl -sf https://readingstaging.a007.bid`
-
-## Rule: Plan before implementing
-Before writing any code or making any changes, you MUST:
-1. Describe what you plan to do and why
-2. List the files you intend to create or modify
-3. Wait for the user to explicitly say "go ahead" or "yes" before proceeding
-
-Do not start implementing until the user approves the plan.
-
-## Rule: Read files before editing
-Always use `str_replace_editor` with `command: view` on any file before editing it with `command: str_replace`. Never call `str_replace` without having viewed the file first — `old_str` must exactly match existing content.
 
 ## Rule: Update this file at the end of every task
 Before marking any task as complete, you MUST update this file with everything new you discovered:
