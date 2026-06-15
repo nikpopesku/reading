@@ -90,6 +90,9 @@ Before writing any code or making any changes, you MUST:
 
 Do not start implementing until the user approves the plan.
 
+## Rule: Read files before editing
+Always use `str_replace_editor` with `command: view` on any file before editing it with `command: str_replace`. Never call `str_replace` without having viewed the file first — `old_str` must exactly match existing content.
+
 ## Rule: Update this file at the end of every task
 Before marking any task as complete, you MUST update this file with everything new you discovered:
 - Files you read and what they do
