@@ -92,7 +92,10 @@ jobs:
             docker pull "ghcr.io/nikpopesku/reading-web:$IMAGE_TAG"
             cd /home/spacer/reading
             IMAGE_TAG="$IMAGE_TAG" DATABASE_URL="$DATABASE_URL" \
-              docker stack deploy --detach=true --with-registry-auth --pull -c docker-stack.staging.yml reading-staging
+              docker stack deploy --detach=true --with-registry-auth -c docker-stack.staging.yml reading-staging
+
+            # Force pull the latest image and restart the service
+            docker service update --force --with-registry-auth reading-staging_web
 
             web_container=""
             for attempt in $(seq 1 30); do
