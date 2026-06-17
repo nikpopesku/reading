@@ -4,6 +4,10 @@ on:
   push:
     branches: [master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -88,7 +92,7 @@ jobs:
             docker pull "ghcr.io/nikpopesku/reading-web:$IMAGE_TAG"
             cd /home/spacer/reading
             IMAGE_TAG="$IMAGE_TAG" DATABASE_URL="$DATABASE_URL" \
-              docker stack deploy --detach=true -c docker-stack.staging.yml reading-staging --with-registry-auth
+              docker stack deploy --detach=true --with-registry-auth --pull -c docker-stack.staging.yml reading-staging
 
             web_container=""
             for attempt in $(seq 1 30); do
