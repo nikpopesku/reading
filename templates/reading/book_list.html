@@ -58,13 +58,13 @@
     <tbody>
       {% for book in books %}
         <tr>
-          <td>{{ book.title }}</td>
-          <td>{{ book.author|default:"-" }}</td>
-          <td><span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span></td>
-          <td>{{ book.started_at|default:"-" }}</td>
-          <td>{{ book.finished_at|default:"-" }}</td>
-          <td>{% if book.rating %}{{ book.rating }}/10{% else %}-{% endif %}</td>
-          <td>{{ book.notes|default:"-"|linebreaksbr }}</td>
+          <td class="cell-title" data-label="Title">{{ book.title }}</td>
+          <td class="cell-author" data-label="Author">{{ book.author|default:"-" }}</td>
+          <td class="cell-status" data-label="Status"><span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span></td>
+          <td class="cell-started" data-label="Started">{{ book.started_at|default:"-" }}</td>
+          <td class="cell-finished" data-label="Finished">{{ book.finished_at|default:"-" }}</td>
+          <td class="cell-rating" data-label="Rating">{% if book.rating %}{{ book.rating }}/10{% else %}-{% endif %}</td>
+          <td class="cell-notes" data-label="Notes">{{ book.notes|default:"-"|linebreaksbr }}</td>
         </tr>
       {% empty %}
         <tr>

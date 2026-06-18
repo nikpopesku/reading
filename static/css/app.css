@@ -112,6 +112,20 @@ input, select, textarea {
   .topbar { padding: 16px 20px; }
   .topbar nav { flex-wrap: wrap; }
   .page { padding: 24px 16px; }
+  .filters-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0;
+  }
+  .filters-bar .tabs {
+    overflow-x: auto;
+    padding-bottom: 0;
+  }
+  .year-filter-form, .rating-filter-form {
+    padding-bottom: 4px;
+    padding-top: 4px;
+  }
+  .tab { font-size: 14px; padding: 10px 10px; }
 }
 
 .table-wrap {
@@ -140,3 +154,73 @@ input, select, textarea {
 }
 .book-table tr:last-child td { border-bottom: 0; }
 .empty-cell { color: #65716b; text-align: center; }
+
+/* === Responsive: table → card rows on mobile === */
+@media (max-width: 768px) {
+  .table-wrap {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow-x: visible;
+  }
+  .book-table,
+  .book-table thead,
+  .book-table tbody,
+  .book-table tr,
+  .book-table th,
+  .book-table td {
+    display: block;
+  }
+  .book-table {
+    min-width: 0;
+    width: 100%;
+  }
+  .book-table thead {
+    display: none;
+  }
+  .book-table tr {
+    background: #ffffff;
+    border: 1px solid #dfe4dc;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px;
+  }
+  .book-table tr:last-child {
+    margin-bottom: 0;
+  }
+  .book-table td {
+    border: 0;
+    padding: 4px 0;
+  }
+  .book-table td::before {
+    color: #65716b;
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  /* Title is the card heading — no label above it */
+  .book-table .cell-title {
+    font-size: 17px;
+    font-weight: 700;
+    padding-bottom: 6px;
+    padding-top: 0;
+  }
+  .book-table .cell-title::before { display: none; }
+  /* Status pill sits inline after the title row */
+  .book-table .cell-status {
+    padding-bottom: 10px;
+  }
+  .book-table .cell-status::before { display: none; }
+  /* Notes gets breathing room */
+  .book-table .cell-notes {
+    border-top: 1px solid #e4e8e1;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: 6px;
+    padding-bottom: 0;
+    padding-top: 10px;
+  }
+}
