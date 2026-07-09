@@ -13,14 +13,15 @@
 
 <div class="filters-bar">
   <nav class="tabs" aria-label="Book status filters">
-    <a class="tab {% if not selected_status %}active{% endif %}" href="{% url 'book-list' %}{% if selected_year %}?year={{ selected_year }}{% endif %}">All <span>{{ total_count }}</span></a>
+    <a class="tab {% if not selected_status %}active{% endif %}" href="{% url 'book-list' %}{% if selected_year %}?year={{ selected_year }}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}{% elif selected_sort %}?sort={{ selected_sort }}{% endif %}">All <span>{{ total_count }}</span></a>
     {% for status in statuses %}
-      <a class="tab {% if selected_status == status.value %}active{% endif %}" href="{% url 'book-list' %}?status={{ status.value }}{% if selected_year %}&year={{ selected_year }}{% endif %}">{{ status.label }} <span>{{ counts|get_item:status.value }}</span></a>
+      <a class="tab {% if selected_status == status.value %}active{% endif %}" href="{% url 'book-list' %}?status={{ status.value }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}">{{ status.label }} <span>{{ counts|get_item:status.value }}</span></a>
     {% endfor %}
   </nav>
   {% if years %}
   <form method="get" action="{% url 'book-list' %}" class="year-filter-form">
     {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+    {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
     {% if selected_rating %}<input type="hidden" name="rating" value="{{ selected_rating }}">{% endif %}
     <select name="year" onchange="this.form.submit()" aria-label="Filter by year">
       <option value="">All years</option>
@@ -33,6 +34,7 @@
   <form method="get" action="{% url 'book-list' %}" class="rating-filter-form">
     {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
     {% if selected_year %}<input type="hidden" name="year" value="{{ selected_year }}">{% endif %}
+    {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
     <select name="rating" onchange="this.form.submit()" aria-label="Filter by rating">
       <option value="">All ratings</option>
       {% for r in ratings %}
@@ -46,12 +48,24 @@
   <table class="book-table">
     <thead>
       <tr>
-        <th>Title</th>
-        <th>Author</th>
-        <th>Status</th>
-        <th>Started</th>
-        <th>Finished</th>
-        <th>Rating</th>
+        <th aria-sort="{{ sort_links.title.aria_sort }}">
+          <a class="sort-link {% if sort_links.title.is_active %}active{% endif %}" href="{{ sort_links.title.url }}">Title <span aria-hidden="true">{{ sort_links.title.direction }}</span></a>
+        </th>
+        <th aria-sort="{{ sort_links.author.aria_sort }}">
+          <a class="sort-link {% if sort_links.author.is_active %}active{% endif %}" href="{{ sort_links.author.url }}">Author <span aria-hidden="true">{{ sort_links.author.direction }}</span></a>
+        </th>
+        <th aria-sort="{{ sort_links.status.aria_sort }}">
+          <a class="sort-link {% if sort_links.status.is_active %}active{% endif %}" href="{{ sort_links.status.url }}">Status <span aria-hidden="true">{{ sort_links.status.direction }}</span></a>
+        </th>
+        <th aria-sort="{{ sort_links.started_at.aria_sort }}">
+          <a class="sort-link {% if sort_links.started_at.is_active %}active{% endif %}" href="{{ sort_links.started_at.url }}">Started <span aria-hidden="true">{{ sort_links.started_at.direction }}</span></a>
+        </th>
+        <th aria-sort="{{ sort_links.finished_at.aria_sort }}">
+          <a class="sort-link {% if sort_links.finished_at.is_active %}active{% endif %}" href="{{ sort_links.finished_at.url }}">Finished <span aria-hidden="true">{{ sort_links.finished_at.direction }}</span></a>
+        </th>
+        <th aria-sort="{{ sort_links.rating.aria_sort }}">
+          <a class="sort-link {% if sort_links.rating.is_active %}active{% endif %}" href="{{ sort_links.rating.url }}">Rating <span aria-hidden="true">{{ sort_links.rating.direction }}</span></a>
+        </th>
         <th>Notes</th>
       </tr>
     </thead>
