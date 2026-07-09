@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -55,6 +57,30 @@ class BookViewTests(TestCase):
 
         self.assertContains(response, "Reading now")
         self.assertNotContains(response, "Later")
+
+    def test_user_can_sort_books_by_status(self):
+        Book.objects.create(title="Read", status=BookStatus.READ)
+        Book.objects.create(title="Will read", status=BookStatus.WILL_READ)
+        Book.objects.create(title="Reading", status=BookStatus.READING)
+
+        response = self.client.get(reverse("book-list"), {"sort": "status"})
+
+        self.assertEqual(
+            list(response.context["books"].values_list("title", flat=True)),
+            ["Will read", "Reading", "Read"],
+        )
+
+    def test_user_can_sort_books_by_finished_date(self):
+        Book.objects.create(title="Older", status=BookStatus.READ, finished_at=date(2024, 1, 1))
+        Book.objects.create(title="Newer", status=BookStatus.READ, finished_at=date(2024, 2, 1))
+        Book.objects.create(title="Unfinished", status=BookStatus.READ)
+
+        response = self.client.get(reverse("book-list"), {"sort": "-finished_at"})
+
+        self.assertEqual(
+            list(response.context["books"].values_list("title", flat=True)),
+            ["Newer", "Older", "Unfinished"],
+        )
 
     def test_deleted_books_are_hidden_from_library(self):
         Book.objects.create(title="Visible", status=BookStatus.READING)
