@@ -48,16 +48,24 @@
   <table class="book-table">
     <thead>
       <tr>
-        <th>Title</th>
-        <th>Author</th>
+        <th aria-sort="{{ sort_links.title.aria_sort }}">
+          <a class="sort-link {% if sort_links.title.is_active %}active{% endif %}" href="{{ sort_links.title.url }}">Title <span aria-hidden="true">{{ sort_links.title.direction }}</span></a>
+        </th>
+        <th aria-sort="{{ sort_links.author.aria_sort }}">
+          <a class="sort-link {% if sort_links.author.is_active %}active{% endif %}" href="{{ sort_links.author.url }}">Author <span aria-hidden="true">{{ sort_links.author.direction }}</span></a>
+        </th>
         <th aria-sort="{{ sort_links.status.aria_sort }}">
           <a class="sort-link {% if sort_links.status.is_active %}active{% endif %}" href="{{ sort_links.status.url }}">Status <span aria-hidden="true">{{ sort_links.status.direction }}</span></a>
         </th>
-        <th>Started</th>
+        <th aria-sort="{{ sort_links.started_at.aria_sort }}">
+          <a class="sort-link {% if sort_links.started_at.is_active %}active{% endif %}" href="{{ sort_links.started_at.url }}">Started <span aria-hidden="true">{{ sort_links.started_at.direction }}</span></a>
+        </th>
         <th aria-sort="{{ sort_links.finished_at.aria_sort }}">
           <a class="sort-link {% if sort_links.finished_at.is_active %}active{% endif %}" href="{{ sort_links.finished_at.url }}">Finished <span aria-hidden="true">{{ sort_links.finished_at.direction }}</span></a>
         </th>
-        <th>Rating</th>
+        <th aria-sort="{{ sort_links.rating.aria_sort }}">
+          <a class="sort-link {% if sort_links.rating.is_active %}active{% endif %}" href="{{ sort_links.rating.url }}">Rating <span aria-hidden="true">{{ sort_links.rating.direction }}</span></a>
+        </th>
         <th>Notes</th>
       </tr>
     </thead>

@@ -76,14 +76,30 @@ def book_list(request):
         output_field=IntegerField(),
     )
 
-    if selected_sort == "status":
+    if selected_sort == "title":
+        books = books.order_by("title")
+    elif selected_sort == "-title":
+        books = books.order_by("-title")
+    elif selected_sort == "author":
+        books = books.order_by("author", "title")
+    elif selected_sort == "-author":
+        books = books.order_by("-author", "title")
+    elif selected_sort == "status":
         books = books.order_by(status_order, "title")
     elif selected_sort == "-status":
         books = books.order_by(status_order.desc(), "title")
+    elif selected_sort == "started_at":
+        books = books.order_by(F("started_at").asc(nulls_last=True), "title")
+    elif selected_sort == "-started_at":
+        books = books.order_by(F("started_at").desc(nulls_last=True), "title")
     elif selected_sort == "finished_at":
         books = books.order_by(F("finished_at").asc(nulls_last=True), "title")
     elif selected_sort == "-finished_at":
         books = books.order_by(F("finished_at").desc(nulls_last=True), "title")
+    elif selected_sort == "rating":
+        books = books.order_by(F("rating").asc(nulls_last=True), "title")
+    elif selected_sort == "-rating":
+        books = books.order_by(F("rating").desc(nulls_last=True), "title")
     else:
         books = books.order_by(status_order, "title")
 
@@ -105,8 +121,12 @@ def book_list(request):
             "selected_year": selected_year,
             "selected_sort": selected_sort,
             "sort_links": {
+                "title": _sort_link(request, selected_sort, "title"),
+                "author": _sort_link(request, selected_sort, "author"),
                 "status": _sort_link(request, selected_sort, "status"),
+                "started_at": _sort_link(request, selected_sort, "started_at"),
                 "finished_at": _sort_link(request, selected_sort, "finished_at"),
+                "rating": _sort_link(request, selected_sort, "rating"),
             },
             "years": years,
             "counts": counts,

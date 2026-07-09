@@ -11,7 +11,7 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env.local}
       DJANGO_ALLOWED_HOSTS: readinglocal.a007.bid,localhost,127.0.0.1
       DJANGO_CSRF_TRUSTED_ORIGINS: https://readinglocal.a007.bid
-      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.local}
+      DATABASE_URL: postgresql://${POSTGRES_USER:?Set POSTGRES_USER in .env.local}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.local}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env.local}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
