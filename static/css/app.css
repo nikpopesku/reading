@@ -94,6 +94,24 @@ p { line-height: 1.55; }
 .book-meta div { min-width: 88px; }
 dt { color: #65716b; font-size: 12px; }
 dd { margin: 2px 0 0; }
+.book-cover-thumb {
+  border-radius: 6px;
+  display: block;
+  height: 72px;
+  object-fit: cover;
+  width: 48px;
+}
+.book-cover-placeholder {
+  align-items: center;
+  background: #eef3ee;
+  border: 1px dashed #c7d1c7;
+  border-radius: 6px;
+  color: #6b766f;
+  display: inline-flex;
+  height: 72px;
+  justify-content: center;
+  width: 48px;
+}
 .status-actions, .card-actions, .button-row { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
 .status-actions button, .primary-button, .danger-button {
   border: 0;
@@ -147,7 +165,7 @@ input, select, textarea {
 }
 .book-table {
   border-collapse: collapse;
-  min-width: 860px;
+  min-width: 940px;
   width: 100%;
 }
 .book-table th,
@@ -228,6 +246,12 @@ input, select, textarea {
     padding-top: 0;
   }
   .book-table .cell-title::before { display: none; }
+  .book-table .cell-cover {
+    align-items: start;
+    display: flex;
+    padding-bottom: 10px;
+  }
+  .book-table .cell-cover::before { display: none; }
   /* Status pill sits inline after the title row */
   .book-table .cell-status {
     padding-bottom: 10px;

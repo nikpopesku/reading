@@ -1,11 +1,61 @@
+import struct
+import zlib
 from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Book, BookStatus, Tag
+from .models import (
+    MAX_BOOK_COVER_IMAGE_HEIGHT,
+    MAX_BOOK_COVER_IMAGE_SIZE_BYTES,
+    MAX_BOOK_COVER_IMAGE_WIDTH,
+    Book,
+    BookStatus,
+    Tag,
+)
+
+
+def make_png_bytes(*, width=48, height=72, color=(36, 93, 99)):
+    signature = b"\x89PNG\r\n\x1a\n"
+    ihdr_data = struct.pack(
+        ">IIBBBBB",
+        width,
+        height,
+        8,
+        2,
+        0,
+        0,
+        0,
+    )
+    ihdr_body = b"IHDR" + ihdr_data
+    ihdr = (
+        struct.pack(">I", len(ihdr_data))
+        + ihdr_body
+        + struct.pack(">I", zlib.crc32(ihdr_body) & 0xFFFFFFFF)
+    )
+
+    row = bytes([0]) + bytes(color) * width
+    raw = row * height
+    compressed = zlib.compress(raw)
+    idat_body = b"IDAT" + compressed
+    idat = (
+        struct.pack(">I", len(compressed))
+        + idat_body
+        + struct.pack(">I", zlib.crc32(idat_body) & 0xFFFFFFFF)
+    )
+
+    iend_body = b"IEND"
+    iend = struct.pack(">I", 0) + iend_body + struct.pack(">I", zlib.crc32(iend_body) & 0xFFFFFFFF)
+    return signature + ihdr + idat + iend
+
+
+def make_image_file(*, width=48, height=72, name="cover.png"):
+    return SimpleUploadedFile(
+        name, make_png_bytes(width=width, height=height), content_type="image/png"
+    )
 
 
 class BookModelTests(TestCase):
@@ -39,6 +89,48 @@ class BookModelTests(TestCase):
             list(book.tags.order_by("name").values_list("name", flat=True)),
             ["classics", "fiction"],
         )
+
+    def test_book_cover_image_can_be_uploaded_and_displayed_as_thumbnail(self):
+        book = Book.objects.create(
+            title="Dune",
+            author="Frank Herbert",
+            cover_image=make_image_file(),
+        )
+
+        response = self.client.get(reverse("book-list"))
+
+        self.assertContains(response, book.cover_image.url)
+        self.assertContains(response, 'class="book-cover-thumb"', html=False)
+
+    def test_book_cover_image_rejects_non_image_extensions(self):
+        book = Book(title="Dune", cover_image=SimpleUploadedFile("cover.gif", b"gif data"))
+
+        with self.assertRaises(ValidationError):
+            book.full_clean()
+
+    def test_book_cover_image_rejects_images_that_are_too_large(self):
+        image = make_image_file()
+        oversized = SimpleUploadedFile(
+            "cover.png",
+            image.read() + b"0" * (MAX_BOOK_COVER_IMAGE_SIZE_BYTES + 1),
+            content_type="image/png",
+        )
+        book = Book(title="Dune", cover_image=oversized)
+
+        with self.assertRaises(ValidationError):
+            book.full_clean()
+
+    def test_book_cover_image_rejects_images_with_large_dimensions(self):
+        book = Book(
+            title="Dune",
+            cover_image=make_image_file(
+                width=MAX_BOOK_COVER_IMAGE_WIDTH + 1,
+                height=MAX_BOOK_COVER_IMAGE_HEIGHT + 1,
+            ),
+        )
+
+        with self.assertRaises(ValidationError):
+            book.full_clean()
 
 
 class BookViewTests(TestCase):
@@ -168,7 +260,7 @@ class BookViewTests(TestCase):
         )
         self.client.force_login(admin_user)
         used_tag = Tag.objects.create(name="used")
-        unused_tag = Tag.objects.create(name="unused")
+        Tag.objects.create(name="unused")
         book = Book.objects.create(title="Tagged", status=BookStatus.READING)
         book.tags.add(used_tag)
 

@@ -32,6 +32,8 @@ services:
     networks:
       - default
       - traefik
+    volumes:
+      - media:/app/media
     deploy:
       replicas: 1
       restart_policy:
@@ -44,6 +46,9 @@ networks:
     driver: overlay
   traefik:
     external: true
+
+volumes:
+  media:
 
 secrets:
   reading_django_secret_key:
