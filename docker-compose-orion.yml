@@ -20,11 +20,14 @@ services:
       - "traefik.http.services.reading-orion.loadbalancer.server.port=8000"
       - "traefik.http.routers.reading-orion-http.rule=Host(`readingorion.a007.bid`)"
       - "traefik.http.routers.reading-orion-http.entrypoints=web"
+      - "traefik.http.routers.reading-orion-http.service=reading-orion"
       - "traefik.http.routers.reading-orion.rule=Host(`readingorion.a007.bid`)"
-      - "traefik.http.routers.reading-orion.entrypoints=websecure"
+      - "traefik.http.routers.reading-orion.entrypoints=https"
+      - "traefik.http.routers.reading-orion.service=reading-orion"
       - "traefik.http.routers.reading-orion.tls=true"
       - "traefik.http.routers.reading-orion-local.rule=Host(`localhost`) || Host(`127.0.0.1`)"
       - "traefik.http.routers.reading-orion-local.entrypoints=web"
+      - "traefik.http.routers.reading-orion-local.service=reading-orion-local"
       - "traefik.http.services.reading-orion-local.loadbalancer.server.port=8000"
     networks:
       - default
