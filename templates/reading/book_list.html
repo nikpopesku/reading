@@ -57,6 +57,7 @@
         <th aria-sort="{{ sort_links.status.aria_sort }}">
           <a class="sort-link {% if sort_links.status.is_active %}active{% endif %}" href="{{ sort_links.status.url }}">Status <span aria-hidden="true">{{ sort_links.status.direction }}</span></a>
         </th>
+        <th>Tags</th>
         <th aria-sort="{{ sort_links.started_at.aria_sort }}">
           <a class="sort-link {% if sort_links.started_at.is_active %}active{% endif %}" href="{{ sort_links.started_at.url }}">Started <span aria-hidden="true">{{ sort_links.started_at.direction }}</span></a>
         </th>
@@ -75,6 +76,17 @@
           <td class="cell-title" data-label="Title">{{ book.title }}</td>
           <td class="cell-author" data-label="Author">{{ book.author|default:"-" }}</td>
           <td class="cell-status" data-label="Status"><span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span></td>
+          <td class="cell-tags" data-label="Tags">
+            {% if book.tags.all %}
+              <div class="tag-list">
+                {% for tag in book.tags.all %}
+                  <span class="tag-pill">{{ tag }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              -
+            {% endif %}
+          </td>
           <td class="cell-started" data-label="Started">{{ book.started_at|default:"-" }}</td>
           <td class="cell-finished" data-label="Finished">{{ book.finished_at|default:"-" }}</td>
           <td class="cell-rating" data-label="Rating">{% if book.rating %}{{ book.rating }}/10{% else %}-{% endif %}</td>
@@ -82,7 +94,7 @@
         </tr>
       {% empty %}
         <tr>
-          <td colspan="7" class="empty-cell">No books yet.</td>
+          <td colspan="8" class="empty-cell">No books yet.</td>
         </tr>
       {% endfor %}
     </tbody>

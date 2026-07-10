@@ -79,6 +79,17 @@ p { line-height: 1.55; }
 .status-will_read { background: #e8edf1; color: #33404a; }
 .status-reading { background: #e3f2eb; color: #1f6449; }
 .status-read { background: #f8e7c7; color: #7a4e00; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-pill {
+  background: #eef3ee;
+  border: 1px solid #d7e0d8;
+  border-radius: 999px;
+  color: #3b4742;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 9px;
+}
 .book-meta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
 .book-meta div { min-width: 88px; }
 dt { color: #65716b; font-size: 12px; }

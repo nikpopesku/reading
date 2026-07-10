@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Book, BookStatus
+from .models import Book, BookStatus, Tag
 
 
 class BookModelTests(TestCase):
@@ -28,6 +28,18 @@ class BookModelTests(TestCase):
         with self.assertRaises(ValidationError):
             Book(title="Invalid", rating=11).full_clean()
 
+    def test_book_can_have_tags(self):
+        book = Book.objects.create(title="Dune")
+        fiction = Tag.objects.create(name="fiction")
+        classics = Tag.objects.create(name="classics")
+
+        book.tags.add(fiction, classics)
+
+        self.assertEqual(
+            list(book.tags.order_by("name").values_list("name", flat=True)),
+            ["classics", "fiction"],
+        )
+
 
 class BookViewTests(TestCase):
     def setUp(self):
@@ -48,6 +60,17 @@ class BookViewTests(TestCase):
         self.assertContains(response, "<table", html=False)
         self.assertContains(response, "Reading now")
         self.assertContains(response, "Author")
+
+    def test_homepage_displays_book_tags(self):
+        book = Book.objects.create(title="Tagged", status=BookStatus.READING)
+        fiction = Tag.objects.create(name="fiction")
+        classics = Tag.objects.create(name="classics")
+        book.tags.add(fiction, classics)
+
+        response = self.client.get(reverse("book-list"))
+
+        self.assertContains(response, "fiction")
+        self.assertContains(response, "classics")
 
     def test_user_can_filter_books_without_login(self):
         Book.objects.create(title="Reading now", status=BookStatus.READING)
@@ -138,6 +161,24 @@ class BookViewTests(TestCase):
 
         self.assertContains(response, "Visible")
         self.assertNotContains(response, "Hidden")
+
+    def test_admin_tag_changelist_shows_usage_counts(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="superadmin", password="password", email="admin@example.com"
+        )
+        self.client.force_login(admin_user)
+        used_tag = Tag.objects.create(name="used")
+        unused_tag = Tag.objects.create(name="unused")
+        book = Book.objects.create(title="Tagged", status=BookStatus.READING)
+        book.tags.add(used_tag)
+
+        response = self.client.get(reverse("admin:books_tag_changelist"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "used")
+        self.assertContains(response, "unused")
+        self.assertContains(response, "1")
+        self.assertContains(response, "0")
 
     def test_admin_login_is_available(self):
         response = self.client.get(reverse("admin:index"))
