@@ -8,10 +8,10 @@ services:
       - venv:/app/.venv
     environment:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env.orion}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-}
       DJANGO_ALLOWED_HOSTS: readingorion.a007.bid,localhost,127.0.0.1
       DJANGO_CSRF_TRUSTED_ORIGINS: https://readingorion.a007.bid,http://localhost,http://127.0.0.1
-      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.orion}
+      DATABASE_URL: ${DATABASE_URL:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.reading-orion.rule=Host(`readingorion.a007.bid`)"
