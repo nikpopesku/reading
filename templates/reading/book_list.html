@@ -77,15 +77,13 @@
           <td class="cell-author" data-label="Author">{{ book.author|default:"-" }}</td>
           <td class="cell-status" data-label="Status"><span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span></td>
           <td class="cell-tags" data-label="Tags">
-            {% if book.tags.all %}
-              <div class="tag-list">
-                {% for tag in book.tags.all %}
-                  <span class="tag-pill">{{ tag }}</span>
-                {% endfor %}
-              </div>
-            {% else %}
-              -
-            {% endif %}
+            <div class="tag-list">
+              {% for tag in book.tags.all %}
+                <span class="tag-pill">{{ tag }}</span>
+              {% empty %}
+                <span class="tag-empty">-</span>
+              {% endfor %}
+            </div>
           </td>
           <td class="cell-started" data-label="Started">{{ book.started_at|default:"-" }}</td>
           <td class="cell-finished" data-label="Finished">{{ book.finished_at|default:"-" }}</td>

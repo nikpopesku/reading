@@ -1,7 +1,23 @@
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 from django.db.models import Count
 
 from .models import Book, Tag
+
+
+class TagUsageFilter(SimpleListFilter):
+    title = "usage"
+    parameter_name = "usage"
+
+    def lookups(self, request, model_admin):
+        return (("used", "Used"), ("unused", "Unused"))
+
+    def queryset(self, request, queryset):
+        if self.value() == "used":
+            return queryset.filter(books_total__gt=0)
+        if self.value() == "unused":
+            return queryset.filter(books_total=0)
+        return queryset
 
 
 @admin.register(Book)
@@ -16,6 +32,7 @@ class BookAdmin(admin.ModelAdmin):
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ("name", "book_count", "is_used")
+    list_filter = (TagUsageFilter,)
     search_fields = ("name",)
     ordering = ("name",)
 

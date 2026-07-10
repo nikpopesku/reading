@@ -90,6 +90,7 @@ p { line-height: 1.55; }
   font-weight: 600;
   padding: 4px 9px;
 }
+.tag-empty { color: #65716b; }
 .book-meta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
 .book-meta div { min-width: 88px; }
 dt { color: #65716b; font-size: 12px; }

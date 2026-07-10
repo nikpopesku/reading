@@ -168,7 +168,7 @@ class BookViewTests(TestCase):
         )
         self.client.force_login(admin_user)
         used_tag = Tag.objects.create(name="used")
-        unused_tag = Tag.objects.create(name="unused")
+        _unused_tag = Tag.objects.create(name="unused")
         book = Book.objects.create(title="Tagged", status=BookStatus.READING)
         book.tags.add(used_tag)
 
@@ -180,8 +180,26 @@ class BookViewTests(TestCase):
         self.assertContains(response, "1")
         self.assertContains(response, "0")
 
-    def test_admin_login_is_available(self):
-        response = self.client.get(reverse("admin:index"))
+    def test_admin_tag_filter_can_show_used_and_unused_tags(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="superadmin2", password="password", email="admin2@example.com"
+        )
+        self.client.force_login(admin_user)
+        used_tag = Tag.objects.create(name="used-filter")
+        _unused_tag = Tag.objects.create(name="unused-filter")
+        book = Book.objects.create(title="Tagged filter test", status=BookStatus.READING)
+        book.tags.add(used_tag)
 
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/admin/login/", response["Location"])
+        used_response = self.client.get(reverse("admin:books_tag_changelist"), {"usage": "used"})
+        unused_response = self.client.get(
+            reverse("admin:books_tag_changelist"), {"usage": "unused"}
+        )
+
+        self.assertEqual(
+            list(used_response.context["cl"].queryset.values_list("name", flat=True)),
+            ["used-filter"],
+        )
+        self.assertEqual(
+            list(unused_response.context["cl"].queryset.values_list("name", flat=True)),
+            ["unused-filter"],
+        )

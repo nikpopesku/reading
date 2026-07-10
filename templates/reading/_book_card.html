@@ -3,13 +3,13 @@
     <span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span>
     <h2>{{ book.title }}</h2>
     {% if book.author %}<p class="muted">{{ book.author }}</p>{% endif %}
-    {% if book.tags.all %}
-      <div class="tag-list">
-        {% for tag in book.tags.all %}
-          <span class="tag-pill">{{ tag }}</span>
-        {% endfor %}
-      </div>
-    {% endif %}
+    <div class="tag-list">
+      {% for tag in book.tags.all %}
+        <span class="tag-pill">{{ tag }}</span>
+      {% empty %}
+        <span class="tag-empty">-</span>
+      {% endfor %}
+    </div>
     {% if book.notes %}<p>{{ book.notes|linebreaksbr }}</p>{% endif %}
   </div>
   <dl class="book-meta">
