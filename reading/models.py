@@ -12,6 +12,16 @@ class BookStatus(models.TextChoices):
 ACTIVE_BOOK_STATUSES = (BookStatus.WILL_READ, BookStatus.READING, BookStatus.READ)
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Book(models.Model):
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255, blank=True)
@@ -21,6 +31,7 @@ class Book(models.Model):
         default=BookStatus.WILL_READ,
         db_index=True,
     )
+    tags = models.ManyToManyField(Tag, related_name="books", blank=True)
     started_at = models.DateField(blank=True, null=True)
     finished_at = models.DateField(blank=True, null=True)
     rating = models.PositiveSmallIntegerField(

@@ -37,6 +37,8 @@ Open `https://readinglocal.a007.bid`.
 
 Create an ignored Orion env file with `DATABASE_URL`, then start the app:
 
+The Orion compose file also exposes the app on `http://localhost:8000` for local browser checks, alongside `readingorion.a007.bid`.
+
 ```sh
 cp .env.example .env.orion
 make orion-up

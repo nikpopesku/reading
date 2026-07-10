@@ -41,7 +41,7 @@ def book_list(request):
     selected_year = request.GET.get("year", "")
     selected_sort = request.GET.get("sort", "")
 
-    books = Book.objects.exclude(status=BookStatus.DELETED)
+    books = Book.objects.exclude(status=BookStatus.DELETED).prefetch_related("tags")
     if selected_status:
         if selected_status not in [status.value for status in ACTIVE_BOOK_STATUSES]:
             return HttpResponseBadRequest("Unknown status")
