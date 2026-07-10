@@ -1,5 +1,29 @@
-from django.core.validators import MaxValueValidator, MinValueValidator
+import struct
+
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
+
+MAX_BOOK_COVER_IMAGE_SIZE_BYTES = 2 * 1024 * 1024
+MAX_BOOK_COVER_IMAGE_WIDTH = 1200
+MAX_BOOK_COVER_IMAGE_HEIGHT = 1600
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+JPEG_START_OF_IMAGE = b"\xff\xd8"
+JPEG_FRAME_MARKERS = {
+    b"\xc0",
+    b"\xc1",
+    b"\xc2",
+    b"\xc3",
+    b"\xc5",
+    b"\xc6",
+    b"\xc7",
+    b"\xc9",
+    b"\xca",
+    b"\xcb",
+    b"\xcd",
+    b"\xce",
+    b"\xcf",
+}
 
 
 class BookStatus(models.TextChoices):
@@ -25,6 +49,13 @@ class Tag(models.Model):
 class Book(models.Model):
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255, blank=True)
+    cover_image = models.FileField(
+        blank=True,
+        null=True,
+        upload_to="book-covers/",
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+        help_text="Upload a JPG or PNG cover up to 2 MB and 1200×1600 pixels.",
+    )
     status = models.CharField(
         max_length=20,
         choices=BookStatus.choices,
@@ -57,3 +88,84 @@ class Book(models.Model):
         if self.author:
             return f"{self.title} by {self.author}"
         return self.title
+
+    def clean(self):
+        super().clean()
+
+        if not self.cover_image:
+            return
+
+        if self.cover_image.size > MAX_BOOK_COVER_IMAGE_SIZE_BYTES:
+            raise ValidationError({"cover_image": "Cover images must be 2 MB or smaller."})
+
+        try:
+            width, height = _read_book_cover_dimensions(self.cover_image)
+        except ValueError as exc:
+            raise ValidationError({"cover_image": "Upload a valid JPG or PNG image."}) from exc
+
+        if width > MAX_BOOK_COVER_IMAGE_WIDTH or height > MAX_BOOK_COVER_IMAGE_HEIGHT:
+            raise ValidationError(
+                {"cover_image": "Cover images must be no larger than 1200×1600 pixels."}
+            )
+
+
+def _read_book_cover_dimensions(uploaded_file):
+    uploaded_file.seek(0)
+    signature = uploaded_file.read(8)
+    uploaded_file.seek(0)
+
+    if signature.startswith(PNG_SIGNATURE):
+        return _read_png_dimensions(uploaded_file)
+    if signature.startswith(JPEG_START_OF_IMAGE):
+        return _read_jpeg_dimensions(uploaded_file)
+    raise ValueError("Unsupported image format")
+
+
+def _read_png_dimensions(uploaded_file):
+    uploaded_file.seek(16)
+    data = uploaded_file.read(8)
+    uploaded_file.seek(0)
+    if len(data) != 8:
+        raise ValueError("PNG header too short")
+    width, height = struct.unpack(">II", data)
+    if width <= 0 or height <= 0:
+        raise ValueError("Invalid PNG dimensions")
+    return width, height
+
+
+def _read_jpeg_dimensions(uploaded_file):
+    uploaded_file.seek(2)
+    while True:
+        marker_prefix = uploaded_file.read(1)
+        if not marker_prefix:
+            raise ValueError("JPEG size not found")
+        if marker_prefix != b"\xff":
+            continue
+
+        marker = uploaded_file.read(1)
+        while marker == b"\xff":
+            marker = uploaded_file.read(1)
+        if not marker:
+            raise ValueError("JPEG size not found")
+        if marker in {b"\xd8", b"\xd9"}:
+            continue
+
+        length_data = uploaded_file.read(2)
+        if len(length_data) != 2:
+            raise ValueError("JPEG segment too short")
+        segment_length = struct.unpack(">H", length_data)[0]
+        if segment_length < 2:
+            raise ValueError("Invalid JPEG segment length")
+
+        if marker in JPEG_FRAME_MARKERS:
+            precision_data = uploaded_file.read(1)
+            size_data = uploaded_file.read(4)
+            if len(precision_data) != 1 or len(size_data) != 4:
+                raise ValueError("JPEG size not found")
+            height, width = struct.unpack(">HH", size_data)
+            uploaded_file.seek(0)
+            if width <= 0 or height <= 0:
+                raise ValueError("Invalid JPEG dimensions")
+            return width, height
+
+        uploaded_file.seek(segment_length - 2, 1)

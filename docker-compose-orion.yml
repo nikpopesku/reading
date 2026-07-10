@@ -5,6 +5,7 @@ services:
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     volumes:
       - .:/app
+      - media:/app/media
       - venv:/app/.venv
     ports:
       - "8000:8000"
@@ -35,6 +36,7 @@ services:
       - postgres
 
 volumes:
+  media:
   venv:
 
 networks:
