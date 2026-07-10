@@ -37,7 +37,7 @@ Open `https://readinglocal.a007.bid`.
 
 Create an ignored Orion env file with `DATABASE_URL`, then start the app:
 
-The Orion compose file also routes `http://localhost` and `http://127.0.0.1` through Traefik for local checking.
+The Orion compose file also exposes the app on `http://localhost:8000` for local browser checks, alongside `readingorion.a007.bid`.
 
 ```sh
 cp .env.example .env.orion
