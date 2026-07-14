@@ -16,6 +16,7 @@ from .models import (
     BookStatus,
     Tag,
 )
+from .views import DEFAULT_PAGE_SIZE
 
 
 def make_png_bytes(*, width=48, height=72, color=(36, 93, 99)):
@@ -153,6 +154,27 @@ class BookViewTests(TestCase):
         self.assertContains(response, "Reading now")
         self.assertContains(response, "Author")
 
+    def test_homepage_paginates_books_by_default(self):
+        for index in range(DEFAULT_PAGE_SIZE + 1):
+            Book.objects.create(title=f"Book {index:02d}", author="Author")
+
+        response = self.client.get(reverse("book-list"))
+
+        self.assertEqual(response.context["page_obj"].paginator.per_page, DEFAULT_PAGE_SIZE)
+        self.assertEqual(len(response.context["books"]), DEFAULT_PAGE_SIZE)
+        self.assertEqual(response.context["total_count"], DEFAULT_PAGE_SIZE + 1)
+        self.assertContains(response, "Books per page")
+        self.assertContains(response, "Next")
+
+    def test_user_can_change_page_size(self):
+        for index in range(12):
+            Book.objects.create(title=f"Book {index:02d}")
+
+        response = self.client.get(reverse("book-list"), {"page_size": 10})
+
+        self.assertEqual(response.context["page_obj"].paginator.per_page, 10)
+        self.assertEqual(len(response.context["books"]), 10)
+
     def test_homepage_displays_book_tags(self):
         book = Book.objects.create(title="Tagged", status=BookStatus.READING)
         fiction = Tag.objects.create(name="fiction")
@@ -171,6 +193,24 @@ class BookViewTests(TestCase):
         response = self.client.get(reverse("book-list"), {"status": BookStatus.READING})
 
         self.assertContains(response, "Reading now")
+        self.assertNotContains(response, "Later")
+
+    def test_user_can_filter_and_paginate_books_together(self):
+        for index in range(11):
+            Book.objects.create(title=f"Reading {index:02d}", status=BookStatus.READING)
+        Book.objects.create(title="Later", status=BookStatus.WILL_READ)
+
+        response = self.client.get(
+            reverse("book-list"),
+            {"status": BookStatus.READING, "page_size": 10, "page": 2},
+        )
+
+        self.assertEqual(response.context["page_obj"].number, 2)
+        self.assertEqual(len(response.context["books"]), 1)
+        self.assertEqual(
+            list(response.context["books"].values_list("title", flat=True)),
+            ["Reading 10"],
+        )
         self.assertNotContains(response, "Later")
 
     def test_user_can_sort_books_by_status(self):

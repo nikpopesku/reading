@@ -67,6 +67,61 @@ p { line-height: 1.55; }
 .tab span { color: #68746e; margin-left: 4px; }
 .tab.active { border-color: #2f6f73; color: #172026; font-weight: 700; }
 .book-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.pagination-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.page-size-form {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+.page-size-form label,
+.pagination-summary {
+  color: #65716b;
+  font-size: 14px;
+}
+.page-size-form select {
+  width: auto;
+}
+.pagination-nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pagination-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pagination-link,
+.pagination-ellipsis {
+  border: 1px solid #cbd4cc;
+  border-radius: 6px;
+  color: #24302d;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 38px;
+  justify-content: center;
+  padding: 8px 11px;
+}
+.pagination-link.current {
+  background: #2f6f73;
+  border-color: #2f6f73;
+  color: #ffffff;
+}
+.pagination-link.disabled,
+.pagination-ellipsis {
+  background: #f1f4ef;
+  color: #7a8781;
+}
+.pagination-link:hover { text-decoration: none; }
 .book-card, .form-panel, .auth-panel, .empty-state {
   background: #ffffff;
   border: 1px solid #dfe4dc;
