@@ -1,8 +1,12 @@
+from django.core.paginator import Paginator
 from django.db.models import Case, Count, F, IntegerField, Q, Value, When
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 
 from .models import ACTIVE_BOOK_STATUSES, Book, BookStatus
+
+PAGE_SIZE_OPTIONS = (10, 25, 50, 100)
+DEFAULT_PAGE_SIZE = 25
 
 
 def _build_querystring(request, **updates):
@@ -29,11 +33,20 @@ def _sort_link(request, selected_sort, field):
     )
     direction = "▲" if selected_sort == field else "▼" if selected_sort == f"-{field}" else "↕"
     return {
-        "url": _build_querystring(request, sort=next_sort),
+        "url": _build_querystring(request, sort=next_sort, page=1),
         "aria_sort": aria_sort,
         "direction": direction,
         "is_active": is_active,
     }
+
+
+def _selected_page_size(request):
+    try:
+        page_size = int(request.GET.get("page_size", DEFAULT_PAGE_SIZE))
+    except (TypeError, ValueError):
+        return DEFAULT_PAGE_SIZE
+
+    return page_size if page_size in PAGE_SIZE_OPTIONS else DEFAULT_PAGE_SIZE
 
 
 def book_list(request):
@@ -41,7 +54,8 @@ def book_list(request):
     selected_year = request.GET.get("year", "")
     selected_sort = request.GET.get("sort", "")
 
-    books = Book.objects.exclude(status=BookStatus.DELETED).prefetch_related("tags")
+    base_books = Book.objects.exclude(status=BookStatus.DELETED).prefetch_related("tags")
+    books = base_books
     if selected_status:
         if selected_status not in [status.value for status in ACTIVE_BOOK_STATUSES]:
             return HttpResponseBadRequest("Unknown status")
@@ -105,17 +119,26 @@ def book_list(request):
 
     counts_by_status = {
         row["status"]: row["total"]
-        for row in books.order_by().values("status").annotate(total=Count("id"))
+        for row in base_books.order_by().values("status").annotate(total=Count("id"))
     }
     counts = {
         status.value: counts_by_status.get(status.value, 0) for status in ACTIVE_BOOK_STATUSES
     }
 
+    page_size = _selected_page_size(request)
+    paginator = Paginator(books, page_size)
+    page_obj = paginator.get_page(request.GET.get("page", 1))
+
     return render(
         request,
         "reading/book_list.html",
         {
-            "books": books,
+            "books": page_obj.object_list,
+            "page_obj": page_obj,
+            "page_range": paginator.get_elided_page_range(page_obj.number),
+            "is_paginated": page_obj.has_other_pages(),
+            "page_sizes": PAGE_SIZE_OPTIONS,
+            "selected_page_size": page_size,
             "statuses": ACTIVE_BOOK_STATUSES,
             "selected_status": selected_status,
             "selected_year": selected_year,
@@ -131,5 +154,6 @@ def book_list(request):
             "years": years,
             "counts": counts,
             "total_count": books.count(),
+            "all_count": base_books.count(),
         },
     )
