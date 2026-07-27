@@ -11,11 +11,15 @@ COPY --from=uv /uv /uvx /usr/local/bin/
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev
 
+RUN addgroup --system app && adduser --system --ingroup app app
+
 COPY . .
 RUN DJANGO_SECRET_KEY=build-only-staticfiles-key python manage.py collectstatic --noinput
 
-RUN addgroup --system app && adduser --system --ingroup app app
-USER app
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["gunicorn", "reading_project.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
 
 EXPOSE 8000
-CMD ["gunicorn", "reading_project.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
