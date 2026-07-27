@@ -1,11 +1,13 @@
 import struct
+import tempfile
 import zlib
 from datetime import date
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import (
@@ -102,6 +104,18 @@ class BookModelTests(TestCase):
 
         self.assertContains(response, book.cover_image.url)
         self.assertContains(response, 'class="book-cover-thumb"', html=False)
+
+    def test_book_cover_media_file_is_served_when_debug_is_disabled(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            cover_path = Path(media_root) / "book-covers" / "cover.png"
+            cover_path.parent.mkdir(parents=True)
+            cover_path.write_bytes(make_png_bytes())
+
+            with override_settings(DEBUG=False, MEDIA_ROOT=media_root):
+                response = self.client.get("/media/book-covers/cover.png")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "image/png")
 
     def test_book_cover_image_rejects_non_image_extensions(self):
         book = Book(title="Dune", cover_image=SimpleUploadedFile("cover.gif", b"gif data"))
