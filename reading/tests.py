@@ -16,6 +16,7 @@ from .models import (
     MAX_BOOK_COVER_IMAGE_WIDTH,
     Book,
     BookStatus,
+    Language,
     Tag,
 )
 from .views import DEFAULT_PAGE_SIZE
@@ -91,6 +92,12 @@ class BookModelTests(TestCase):
         self.assertEqual(
             list(book.tags.order_by("name").values_list("name", flat=True)),
             ["classics", "fiction"],
+        )
+
+    def test_default_languages_are_seeded(self):
+        self.assertEqual(
+            list(Language.objects.values_list("name", flat=True)),
+            ["Italian", "Romanian", "Russian"],
         )
 
     def test_book_cover_image_can_be_uploaded_and_displayed_as_thumbnail(self):
@@ -209,6 +216,18 @@ class BookViewTests(TestCase):
         self.assertContains(response, "Reading now")
         self.assertNotContains(response, "Later")
 
+    def test_user_can_filter_books_by_language(self):
+        italian = Language.objects.get(name="Italian")
+        russian = Language.objects.get(name="Russian")
+        Book.objects.create(title="War and Peace", status=BookStatus.READ, language=russian)
+        Book.objects.create(title="The Betrothed", status=BookStatus.READING, language=italian)
+
+        response = self.client.get(reverse("book-list"), {"language": russian.id})
+
+        self.assertContains(response, "War and Peace")
+        self.assertContains(response, "Russian")
+        self.assertNotContains(response, "The Betrothed")
+
     def test_user_can_filter_and_paginate_books_together(self):
         for index in range(11):
             Book.objects.create(title=f"Reading {index:02d}", status=BookStatus.READING)
@@ -325,6 +344,32 @@ class BookViewTests(TestCase):
         self.assertContains(response, "unused")
         self.assertContains(response, "1")
         self.assertContains(response, "0")
+
+    def test_admin_can_set_language_when_creating_a_book(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="languageadmin", password="password", email="language@example.com"
+        )
+        self.client.force_login(admin_user)
+        language = Language.objects.get(name="Romanian")
+
+        response = self.client.post(
+            reverse("admin:books_book_add"),
+            {
+                "title": "The Stranger",
+                "author": "Albert Camus",
+                "language": str(language.id),
+                "status": BookStatus.WILL_READ,
+                "started_at": "",
+                "finished_at": "",
+                "rating": "",
+                "notes": "",
+                "_save": "Save",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        book = Book.objects.get(title="The Stranger")
+        self.assertEqual(book.language, language)
 
     def test_admin_login_is_available(self):
         response = self.client.get(reverse("admin:index"))

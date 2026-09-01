@@ -46,9 +46,26 @@ class Tag(models.Model):
         return self.name
 
 
+class Language(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Book(models.Model):
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255, blank=True)
+    language = models.ForeignKey(
+        Language,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="books",
+    )
     cover_image = models.FileField(
         blank=True,
         null=True,
