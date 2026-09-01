@@ -115,6 +115,10 @@ def book_list(request):
         books = books.order_by("author", "title")
     elif selected_sort == "-author":
         books = books.order_by("-author", "title")
+    elif selected_sort == "language":
+        books = books.order_by(F("language__name").asc(nulls_last=True), "title")
+    elif selected_sort == "-language":
+        books = books.order_by(F("language__name").desc(nulls_last=True), "title")
     elif selected_sort == "status":
         books = books.order_by(status_order, "title")
     elif selected_sort == "-status":
@@ -165,6 +169,7 @@ def book_list(request):
             "sort_links": {
                 "title": _sort_link(request, selected_sort, "title"),
                 "author": _sort_link(request, selected_sort, "author"),
+                "language": _sort_link(request, selected_sort, "language"),
                 "status": _sort_link(request, selected_sort, "status"),
                 "started_at": _sort_link(request, selected_sort, "started_at"),
                 "finished_at": _sort_link(request, selected_sort, "finished_at"),
