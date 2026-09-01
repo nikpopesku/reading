@@ -78,7 +78,9 @@
         <th aria-sort="{{ sort_links.status.aria_sort }}">
           <a class="sort-link {% if sort_links.status.is_active %}active{% endif %}" href="{{ sort_links.status.url }}">Status <span aria-hidden="true">{{ sort_links.status.direction }}</span></a>
         </th>
-        <th>Language</th>
+        <th aria-sort="{{ sort_links.language.aria_sort }}">
+          <a class="sort-link {% if sort_links.language.is_active %}active{% endif %}" href="{{ sort_links.language.url }}">Language <span aria-hidden="true">{{ sort_links.language.direction }}</span></a>
+        </th>
         <th>Tags</th>
         <th aria-sort="{{ sort_links.started_at.aria_sort }}">
           <a class="sort-link {% if sort_links.started_at.is_active %}active{% endif %}" href="{{ sort_links.started_at.url }}">Started <span aria-hidden="true">{{ sort_links.started_at.direction }}</span></a>

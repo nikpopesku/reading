@@ -282,6 +282,22 @@ class BookViewTests(TestCase):
             ["Alice", "Mike", "Zed"],
         )
 
+    def test_user_can_sort_books_by_language(self):
+        italian = Language.objects.get(name="Italian")
+        romanian = Language.objects.get(name="Romanian")
+        russian = Language.objects.get(name="Russian")
+        Book.objects.create(title="Zulu", language=russian)
+        Book.objects.create(title="Alpha", language=italian)
+        Book.objects.create(title="Mike", language=romanian)
+        Book.objects.create(title="No language")
+
+        response = self.client.get(reverse("book-list"), {"sort": "language"})
+
+        self.assertEqual(
+            list(response.context["books"].values_list("title", flat=True)),
+            ["Alpha", "Mike", "Zulu", "No language"],
+        )
+
     def test_user_can_sort_books_by_finished_date(self):
         Book.objects.create(title="Older", status=BookStatus.READ, finished_at=date(2024, 1, 1))
         Book.objects.create(title="Newer", status=BookStatus.READ, finished_at=date(2024, 2, 1))
