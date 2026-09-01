@@ -3,7 +3,7 @@ from django.db.models import Case, Count, F, IntegerField, Q, Value, When
 from django.http import HttpResponseBadRequest
 from django.shortcuts import render
 
-from .models import ACTIVE_BOOK_STATUSES, Book, BookStatus
+from .models import ACTIVE_BOOK_STATUSES, Book, BookStatus, Language
 
 PAGE_SIZE_OPTIONS = (10, 25, 50, 100)
 DEFAULT_PAGE_SIZE = 25
@@ -43,7 +43,7 @@ def _sort_link(request, selected_sort, field):
 def _selected_page_size(request):
     try:
         page_size = int(request.GET.get("page_size", DEFAULT_PAGE_SIZE))
-    except (TypeError, ValueError):
+    except ValueError:
         return DEFAULT_PAGE_SIZE
 
     return page_size if page_size in PAGE_SIZE_OPTIONS else DEFAULT_PAGE_SIZE
@@ -52,9 +52,14 @@ def _selected_page_size(request):
 def book_list(request):
     selected_status = request.GET.get("status", "")
     selected_year = request.GET.get("year", "")
+    selected_language = request.GET.get("language", "")
     selected_sort = request.GET.get("sort", "")
 
-    base_books = Book.objects.exclude(status=BookStatus.DELETED).prefetch_related("tags")
+    base_books = (
+        Book.objects.exclude(status=BookStatus.DELETED)
+        .select_related("language")
+        .prefetch_related("tags")
+    )
     books = base_books
     if selected_status:
         if selected_status not in [status.value for status in ACTIVE_BOOK_STATUSES]:
@@ -82,6 +87,18 @@ def book_list(request):
                 books = books.filter(Q(finished_at__year=year_int) | Q(started_at__year=year_int))
         except ValueError:
             selected_year = ""
+
+    languages = Language.objects.order_by("name")
+    if selected_language:
+        try:
+            language_id = int(selected_language)
+        except ValueError:
+            selected_language = ""
+        else:
+            if not languages.filter(id=language_id).exists():
+                selected_language = ""
+            else:
+                books = books.filter(language_id=language_id)
 
     status_order = Case(
         When(status=BookStatus.WILL_READ, then=Value(0)),
@@ -142,6 +159,8 @@ def book_list(request):
             "statuses": ACTIVE_BOOK_STATUSES,
             "selected_status": selected_status,
             "selected_year": selected_year,
+            "languages": languages,
+            "selected_language": selected_language,
             "selected_sort": selected_sort,
             "sort_links": {
                 "title": _sort_link(request, selected_sort, "title"),

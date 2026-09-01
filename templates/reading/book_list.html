@@ -21,6 +21,7 @@
   {% if years %}
   <form method="get" action="{% url 'book-list' %}" class="year-filter-form">
     {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+    {% if selected_language %}<input type="hidden" name="language" value="{{ selected_language }}">{% endif %}
     {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
     <input type="hidden" name="page_size" value="{{ selected_page_size }}">
     <input type="hidden" name="page" value="1">
@@ -32,9 +33,25 @@
     </select>
   </form>
   {% endif %}
+  {% if languages %}
+  <form method="get" action="{% url 'book-list' %}" class="language-filter-form">
+    {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+    {% if selected_year %}<input type="hidden" name="year" value="{{ selected_year }}">{% endif %}
+    {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
+    <input type="hidden" name="page_size" value="{{ selected_page_size }}">
+    <input type="hidden" name="page" value="1">
+    <select name="language" onchange="this.form.submit()" aria-label="Filter by language">
+      <option value="">All languages</option>
+      {% for language in languages %}
+        <option value="{{ language.id }}" {% if selected_language == language.id|stringformat:"s" %}selected{% endif %}>{{ language }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
   <form method="get" action="{% url 'book-list' %}" class="rating-filter-form">
     {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
     {% if selected_year %}<input type="hidden" name="year" value="{{ selected_year }}">{% endif %}
+    {% if selected_language %}<input type="hidden" name="language" value="{{ selected_language }}">{% endif %}
     {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
     <input type="hidden" name="page_size" value="{{ selected_page_size }}">
     <input type="hidden" name="page" value="1">
@@ -61,6 +78,7 @@
         <th aria-sort="{{ sort_links.status.aria_sort }}">
           <a class="sort-link {% if sort_links.status.is_active %}active{% endif %}" href="{{ sort_links.status.url }}">Status <span aria-hidden="true">{{ sort_links.status.direction }}</span></a>
         </th>
+        <th>Language</th>
         <th>Tags</th>
         <th aria-sort="{{ sort_links.started_at.aria_sort }}">
           <a class="sort-link {% if sort_links.started_at.is_active %}active{% endif %}" href="{{ sort_links.started_at.url }}">Started <span aria-hidden="true">{{ sort_links.started_at.direction }}</span></a>
@@ -87,6 +105,7 @@
           <td class="cell-title" data-label="Title">{{ book.title }}</td>
           <td class="cell-author" data-label="Author">{{ book.author|default:"-" }}</td>
           <td class="cell-status" data-label="Status"><span class="status-pill status-{{ book.status }}">{{ book.get_status_display }}</span></td>
+          <td class="cell-language" data-label="Language">{{ book.language|default:"-" }}</td>
           <td class="cell-tags" data-label="Tags">
             {% if book.tags.all %}
               <div class="tag-list">
@@ -105,7 +124,7 @@
         </tr>
       {% empty %}
         <tr>
-          <td colspan="9" class="empty-cell">No books yet.</td>
+          <td colspan="10" class="empty-cell">No books yet.</td>
         </tr>
       {% endfor %}
     </tbody>
@@ -116,6 +135,7 @@
   <form method="get" action="{% url 'book-list' %}" class="page-size-form">
     {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
     {% if selected_year %}<input type="hidden" name="year" value="{{ selected_year }}">{% endif %}
+    {% if selected_language %}<input type="hidden" name="language" value="{{ selected_language }}">{% endif %}
     {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
     <label for="page-size">Books per page</label>
     <select id="page-size" name="page_size" onchange="this.form.submit()">
