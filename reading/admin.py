@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.utils.html import format_html
 
 from .forms import BookForm
-from .models import Book, Language, Tag
+from .models import Author, Book, Language, Tag
 
 
 @admin.register(Book)
@@ -20,7 +20,7 @@ class BookAdmin(admin.ModelAdmin):
         "rating",
     )
     list_filter = ("status", "language", "rating")
-    search_fields = ("title", "author", "notes", "tags__name", "language__name")
+    search_fields = ("title", "author__name", "notes", "tags__name", "language__name")
     ordering = ("status", "title")
     autocomplete_fields = ("language", "tags")
 
@@ -36,6 +36,20 @@ class BookAdmin(admin.ModelAdmin):
             obj.cover_image.url,
             obj.title,
         )
+
+
+@admin.register(Author)
+class AuthorAdmin(admin.ModelAdmin):
+    list_display = ("name", "book_count")
+    search_fields = ("name",)
+    ordering = ("name",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(books_total=Count("books", distinct=True))
+
+    @admin.display(description="Books", ordering="books_total")
+    def book_count(self, obj):
+        return obj.books_total
 
 
 @admin.register(Tag)

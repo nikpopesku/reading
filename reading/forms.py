@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import ACTIVE_BOOK_STATUSES, Book
+from .models import ACTIVE_BOOK_STATUSES, Author, Book
 
 
 class BookForm(forms.ModelForm):
@@ -26,6 +26,7 @@ class BookForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["author"].queryset = Author.objects.order_by("name")
         self.fields["status"].choices = [
             (status.value, status.label) for status in ACTIVE_BOOK_STATUSES
         ]

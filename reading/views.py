@@ -57,7 +57,7 @@ def book_list(request):
 
     base_books = (
         Book.objects.exclude(status=BookStatus.DELETED)
-        .select_related("language")
+        .select_related("author", "language")
         .prefetch_related("tags")
     )
     books = base_books
@@ -112,9 +112,9 @@ def book_list(request):
     elif selected_sort == "-title":
         books = books.order_by("-title")
     elif selected_sort == "author":
-        books = books.order_by("author", "title")
+        books = books.order_by(F("author__name").asc(nulls_last=True), "title")
     elif selected_sort == "-author":
-        books = books.order_by("-author", "title")
+        books = books.order_by(F("author__name").desc(nulls_last=True), "title")
     elif selected_sort == "language":
         books = books.order_by(F("language__name").asc(nulls_last=True), "title")
     elif selected_sort == "-language":
