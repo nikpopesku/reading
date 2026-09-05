@@ -7,6 +7,7 @@ from pathlib import Path
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -14,6 +15,7 @@ from .models import (
     MAX_BOOK_COVER_IMAGE_HEIGHT,
     MAX_BOOK_COVER_IMAGE_SIZE_BYTES,
     MAX_BOOK_COVER_IMAGE_WIDTH,
+    Author,
     Book,
     BookStatus,
     Language,
@@ -62,9 +64,13 @@ def make_image_file(*, width=48, height=72, name="cover.png"):
     )
 
 
+def make_author(name="Author"):
+    return Author.objects.create(name=name)
+
+
 class BookModelTests(TestCase):
     def test_book_defaults_to_will_read(self):
-        book = Book.objects.create(title="Dune", author="Frank Herbert")
+        book = Book.objects.create(title="Dune", author=make_author("Frank Herbert"))
 
         self.assertEqual(book.status, BookStatus.WILL_READ)
         self.assertEqual(str(book), "Dune by Frank Herbert")
@@ -103,7 +109,7 @@ class BookModelTests(TestCase):
     def test_book_cover_image_can_be_uploaded_and_displayed_as_thumbnail(self):
         book = Book.objects.create(
             title="Dune",
-            author="Frank Herbert",
+            author=make_author("Frank Herbert"),
             cover_image=make_image_file(),
         )
 
@@ -167,7 +173,7 @@ class BookViewTests(TestCase):
         self.assertContains(response, "Library")
 
     def test_homepage_renders_books_table(self):
-        Book.objects.create(title="Reading now", author="Author", status=BookStatus.READING)
+        Book.objects.create(title="Reading now", author=make_author(), status=BookStatus.READING)
 
         response = self.client.get(reverse("book-list"))
 
@@ -176,8 +182,9 @@ class BookViewTests(TestCase):
         self.assertContains(response, "Author")
 
     def test_homepage_paginates_books_by_default(self):
+        author = make_author()
         for index in range(DEFAULT_PAGE_SIZE + 1):
-            Book.objects.create(title=f"Book {index:02d}", author="Author")
+            Book.objects.create(title=f"Book {index:02d}", author=author)
 
         response = self.client.get(reverse("book-list"))
 
@@ -271,16 +278,51 @@ class BookViewTests(TestCase):
         )
 
     def test_user_can_sort_books_by_author(self):
-        Book.objects.create(title="Zulu", author="Zed")
-        Book.objects.create(title="Alpha", author="Alice")
-        Book.objects.create(title="Mike", author="Mike")
+        Book.objects.create(title="Zulu", author=make_author("Zed"))
+        Book.objects.create(title="Alpha", author=make_author("Alice"))
+        Book.objects.create(title="Mike", author=make_author("Mike"))
 
         response = self.client.get(reverse("book-list"), {"sort": "author"})
 
         self.assertEqual(
-            list(response.context["books"].values_list("author", flat=True)),
+            list(response.context["books"].values_list("author__name", flat=True)),
             ["Alice", "Mike", "Zed"],
         )
+
+    def test_admin_can_select_author_when_creating_a_book(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="authoradmin", password="password", email="author@example.com"
+        )
+        self.client.force_login(admin_user)
+        author = make_author("Albert Camus")
+
+        response = self.client.post(
+            reverse("admin:books_book_add"),
+            {
+                "title": "The Stranger",
+                "author": str(author.id),
+                "language": "",
+                "status": BookStatus.WILL_READ,
+                "started_at": "",
+                "finished_at": "",
+                "rating": "",
+                "notes": "",
+                "_save": "Save",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        book = Book.objects.get(title="The Stranger")
+        self.assertEqual(book.author, author)
+
+    def test_populate_authors_command_normalizes_existing_authors(self):
+        messy_author = make_author("  Albert Camus  ")
+        book = Book.objects.create(title="The Stranger", author=messy_author)
+
+        call_command("populate_authors")
+
+        book.refresh_from_db()
+        self.assertEqual(book.author.name, "Albert Camus")
 
     def test_user_can_sort_books_by_language(self):
         italian = Language.objects.get(name="Italian")
@@ -366,13 +408,14 @@ class BookViewTests(TestCase):
             username="languageadmin", password="password", email="language@example.com"
         )
         self.client.force_login(admin_user)
+        author = make_author("Albert Camus")
         language = Language.objects.get(name="Romanian")
 
         response = self.client.post(
             reverse("admin:books_book_add"),
             {
                 "title": "The Stranger",
-                "author": "Albert Camus",
+                "author": str(author.id),
                 "language": str(language.id),
                 "status": BookStatus.WILL_READ,
                 "started_at": "",

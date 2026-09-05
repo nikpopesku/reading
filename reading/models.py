@@ -56,9 +56,25 @@ class Language(models.Model):
         return self.name
 
 
+class Author(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Book(models.Model):
     title = models.CharField(max_length=255)
-    author = models.CharField(max_length=255, blank=True)
+    author = models.ForeignKey(
+        Author,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="books",
+    )
     language = models.ForeignKey(
         Language,
         blank=True,
