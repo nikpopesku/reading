@@ -172,6 +172,20 @@ class BookViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Library")
 
+    def test_homepage_has_meta_description_and_allows_indexing(self):
+        response = self.client.get(reverse("book-list"))
+
+        self.assertContains(response, '<meta name="description"')
+        self.assertContains(response, '<meta name="robots" content="index, follow">')
+
+    def test_robots_txt_allows_indexing(self):
+        response = self.client.get("/robots.txt")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+        self.assertContains(response, "Allow: /")
+        self.assertContains(response, "Disallow: /admin/")
+
     def test_homepage_renders_books_table(self):
         Book.objects.create(title="Reading now", author=make_author(), status=BookStatus.READING)
 
