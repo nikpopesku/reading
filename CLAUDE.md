@@ -5,7 +5,7 @@ Personal reading tracker built with Django 6.0 and Python 3.14.
 ## Commands
 
 ```sh
-uv sync          # install dependencies
+uv sync          # install dependencies (also fetches Python 3.14 if missing)
 make test        # run test suite (uv run python manage.py test)
 make lint        # ruff check
 make format      # ruff format
@@ -13,6 +13,21 @@ make check       # django system check
 ```
 
 Always run `make lint` and `make test` before committing.
+
+If `uv` isn't on PATH, install it first: `curl -LsSf https://astral.sh/uv/install.sh | sh` (add `~/.local/bin` to PATH afterwards).
+
+### Required env var for any `manage.py` command run directly (not via Docker)
+
+`DJANGO_DEBUG=1` **must** be exported before running `manage.py test`, `check`, `makemigrations`, etc. outside Docker Compose. Without it, `DEBUG` defaults to `False` and Django raises `RuntimeError: DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is disabled` on startup — there is no `.env` auto-loading (no python-dotenv), so nothing else supplies `SECRET_KEY` in a bare shell.
+
+```sh
+export DJANGO_DEBUG=1
+uv run python manage.py test
+```
+
+### CI runs against PostgreSQL, not SQLite
+
+`.github/workflows/ci.yml` spins up a real `postgres:17-alpine` service and also runs `makemigrations --check --dry-run` against it. A sandbox with no Postgres will fall back to SQLite (see below) — tests passing locally against SQLite is a good signal but does **not** guarantee the Postgres-backed CI job passes. After pushing, check actual CI status with `gh pr checks --watch` before treating the PR as done; if a check fails, convert the PR to draft (`gh pr ready --undo`) and note the failure in the PR body rather than leaving it as a false ready-for-review signal.
 
 ## Project structure
 
@@ -62,7 +77,7 @@ For local dev and Orion, set `DATABASE_URL=postgresql://...` in `.env.local` / `
 
 | Variable | Required | Notes |
 |---|---|---|
-| `DJANGO_SECRET_KEY` | prod only | auto-placeholder in DEBUG mode |
-| `DJANGO_DEBUG` | no | `1` enables debug + SQLite fallback |
-| `DATABASE_URL` | no | omit to use SQLite |
+| `DJANGO_SECRET_KEY` | only if `DJANGO_DEBUG` is unset/0 | otherwise raises `RuntimeError` on startup |
+| `DJANGO_DEBUG` | **yes, for any bare `manage.py` command** | `1` auto-supplies a placeholder `SECRET_KEY` |
+| `DATABASE_URL` | no | omit to use SQLite (independent of `DJANGO_DEBUG`) |
 | `DJANGO_ALLOWED_HOSTS` | no | comma-separated |
