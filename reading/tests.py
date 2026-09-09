@@ -2,6 +2,7 @@ import struct
 import tempfile
 import zlib
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -87,6 +88,15 @@ class BookModelTests(TestCase):
 
         with self.assertRaises(ValidationError):
             Book(title="Invalid", rating=11).full_clean()
+
+    def test_book_accepts_half_point_rating(self):
+        book = Book.objects.create(title="Deep Work", rating=Decimal("6.5"))
+
+        book.full_clean()
+        self.assertEqual(book.rating, Decimal("6.5"))
+
+        with self.assertRaises(ValidationError):
+            Book(title="Invalid", rating=Decimal("0.5")).full_clean()
 
     def test_book_can_have_tags(self):
         book = Book.objects.create(title="Dune")
