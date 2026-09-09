@@ -289,6 +289,18 @@ class BookViewTests(TestCase):
             ["Will read", "Reading", "Read"],
         )
 
+    def test_default_sort_is_by_finished_date_descending(self):
+        Book.objects.create(title="Older", status=BookStatus.READ, finished_at=date(2024, 1, 1))
+        Book.objects.create(title="Newer", status=BookStatus.READ, finished_at=date(2024, 2, 1))
+        Book.objects.create(title="Unfinished", status=BookStatus.WILL_READ)
+
+        response = self.client.get(reverse("book-list"))
+
+        self.assertEqual(
+            list(response.context["books"].values_list("title", flat=True)),
+            ["Newer", "Older", "Unfinished"],
+        )
+
     def test_user_can_sort_books_by_title(self):
         Book.objects.create(title="Zulu", status=BookStatus.READ)
         Book.objects.create(title="Alpha", status=BookStatus.WILL_READ)
