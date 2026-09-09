@@ -136,7 +136,7 @@ def book_list(request):
     elif selected_sort == "-rating":
         books = books.order_by(F("rating").desc(nulls_last=True), "title")
     else:
-        books = books.order_by(status_order, "title")
+        books = books.order_by(F("finished_at").desc(nulls_last=True), "title")
 
     counts_by_status = {
         row["status"]: row["total"]
