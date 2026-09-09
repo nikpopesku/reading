@@ -15,6 +15,7 @@ services:
       DJANGO_ALLOWED_HOSTS: readingorion.a007.bid,localhost,127.0.0.1
       DJANGO_CSRF_TRUSTED_ORIGINS: https://readingorion.a007.bid,http://localhost,http://127.0.0.1
       DATABASE_URL: ${DATABASE_URL:-}
+      RUN_STARTUP_TASKS: "1"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"

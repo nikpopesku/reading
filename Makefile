@@ -1,7 +1,7 @@
 COMPOSE_LOCAL = docker compose --env-file .env.local -f docker-compose-local.yml
 COMPOSE_ORION = docker compose --env-file .env.orion -f docker-compose-orion.yml
 
-.PHONY: local-up local-down orion-up orion-down shell migrate createsuperuser test lint format check
+.PHONY: local-up local-down orion-up orion-down orion-migrate orion-collectstatic shell migrate createsuperuser test lint format check
 
 local-up:
 	$(COMPOSE_LOCAL) up -d --build
@@ -14,6 +14,14 @@ orion-up:
 
 orion-down:
 	$(COMPOSE_ORION) down
+
+# The container already runs these on every start (RUN_STARTUP_TASKS=1 in
+# docker-compose-orion.yml); these targets are a manual fallback.
+orion-migrate:
+	$(COMPOSE_ORION) exec web python manage.py migrate
+
+orion-collectstatic:
+	$(COMPOSE_ORION) exec web python manage.py collectstatic --noinput
 
 shell:
 	$(COMPOSE_LOCAL) exec web sh

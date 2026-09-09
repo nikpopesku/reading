@@ -53,6 +53,15 @@ No `DATABASE_URL` set → falls back to **SQLite** automatically (see `settings.
 
 For local dev and Orion, set `DATABASE_URL=postgresql://...` in `.env.local` / `.env.orion`.
 
+Orion has no CI/CD deploy step (unlike staging/prod, where `migrate` runs
+explicitly as part of the workflow) — `docker-compose-orion.yml` bind-mounts
+the repo into the container, so the entrypoint runs `manage.py migrate` and
+`manage.py collectstatic` on every container start (`RUN_STARTUP_TASKS=1`)
+to keep the DB schema and served static files in sync with whatever's
+checked out. If orion ever 500s with a missing relation, or serves stale
+CSS/JS, restart the container (`make orion-up`) or run `make orion-migrate` /
+`make orion-collectstatic` directly rather than editing the DB by hand.
+
 ## Key model facts
 
 - `Book` statuses: `will_read`, `reading`, `read`, `deleted` (deleted is hidden from the UI)

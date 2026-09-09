@@ -23,6 +23,13 @@ make local-down  # docker compose down
 - Production (Titan): manual via workflow_dispatch (deploy-prod.yml)
 - Docker Swarm with Traefik + Let's Encrypt
 - Images: ghcr.io/nikpopesku/reading-web
+- Orion: no deploy pipeline — `docker-compose-orion.yml` bind-mounts this
+  repo straight into the `reading-web` container (`make orion-up`), so a
+  `git pull`/merge on the orion host takes effect immediately, including any
+  new migration or static asset. The container's entrypoint runs `migrate`
+  and `collectstatic` on every start (`RUN_STARTUP_TASKS=1`) so the DB schema
+  and served CSS/JS can't drift behind the code on disk the way staging/prod
+  would if a deploy step were skipped.
 
 ## Code style
 - Ruff: line-length 100, target py314, select E/F/I/UP/B/DJ, ignore DJ001
