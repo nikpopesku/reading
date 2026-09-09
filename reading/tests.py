@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -16,6 +19,18 @@ class BookModelTests(TestCase):
         book = Book.objects.create(title="Sapiens")
 
         self.assertEqual(str(book), "Sapiens")
+
+    def test_book_accepts_half_point_rating(self):
+        book = Book.objects.create(title="Dune", rating=Decimal("4.5"))
+
+        book.full_clean()
+        self.assertEqual(book.rating, Decimal("4.5"))
+
+    def test_book_rejects_rating_below_one(self):
+        book = Book(title="Dune", rating=Decimal("0.5"))
+
+        with self.assertRaises(ValidationError):
+            book.full_clean()
 
 
 class BookViewTests(TestCase):

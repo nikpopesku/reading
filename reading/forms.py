@@ -10,6 +10,7 @@ class BookForm(forms.ModelForm):
         widgets = {
             "started_at": forms.DateInput(attrs={"type": "date"}),
             "finished_at": forms.DateInput(attrs={"type": "date"}),
+            "rating": forms.NumberInput(attrs={"step": "0.5", "min": "1", "max": "5"}),
             "notes": forms.Textarea(attrs={"rows": 5}),
         }
 
