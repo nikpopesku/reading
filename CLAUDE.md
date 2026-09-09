@@ -56,7 +56,7 @@ For local dev and Orion, set `DATABASE_URL=postgresql://...` in `.env.local` / `
 ## Key model facts
 
 - `Book` statuses: `will_read`, `reading`, `read`, `deleted` (deleted is hidden from the UI)
-- `rating`: integer 1–5, nullable
+- `rating`: decimal 1–10 in steps of 0.5, nullable
 - Default ordering: `["status", "title"]`
 - Migrations live in `reading/migrations/`; always generate with `uv run python manage.py makemigrations`
 
