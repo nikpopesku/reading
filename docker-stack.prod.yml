@@ -11,21 +11,6 @@ services:
       DATABASE_URL: /run/secrets/reading_database_url
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    # Transitional (PE-78): read by prod Traefik's docker provider until it moves
-    # to the swarm provider, which reads deploy.labels below. Remove afterwards.
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.services.reading-prod.loadbalancer.server.port=8000"
-      - "traefik.http.middlewares.reading-prod-redirect-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.reading-prod-redirect-https.redirectscheme.permanent=true"
-      - "traefik.http.routers.reading-prod-http.rule=Host(`reading.a007.bid`)"
-      - "traefik.http.routers.reading-prod-http.entrypoints=web"
-      - "traefik.http.routers.reading-prod-http.middlewares=reading-prod-redirect-https"
-      - "traefik.http.routers.reading-prod-https.rule=Host(`reading.a007.bid`)"
-      - "traefik.http.routers.reading-prod-https.entrypoints=websecure"
-      - "traefik.http.routers.reading-prod-https.tls=true"
-      - "traefik.http.routers.reading-prod-https.tls.certresolver=myresolver"
     secrets:
       - source: reading_django_secret_key
         target: reading_django_secret_key
