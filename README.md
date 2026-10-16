@@ -2,7 +2,7 @@
 
 Personal reading tracker for books that are planned, in progress, or finished.
 
-**Live:** <https://reading.a007.bid>
+**Live:** <https://reading.run24.top>
 
 ## Stack
 
