@@ -5,8 +5,8 @@ services:
     image: ghcr.io/nikpopesku/reading-web:${IMAGE_TAG:-latest}
     environment:
       DJANGO_DEBUG: "0"
-      DJANGO_ALLOWED_HOSTS: reading.a007.bid
-      DJANGO_CSRF_TRUSTED_ORIGINS: https://reading.a007.bid
+      DJANGO_ALLOWED_HOSTS: reading.run24.top
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://reading.run24.top
       DJANGO_SECRET_KEY: /run/secrets/reading_django_secret_key
       DATABASE_URL: /run/secrets/reading_database_url
     extra_hosts:
@@ -29,10 +29,10 @@ services:
         - "traefik.http.services.reading-prod.loadbalancer.server.port=8000"
         - "traefik.http.middlewares.reading-prod-redirect-https.redirectscheme.scheme=https"
         - "traefik.http.middlewares.reading-prod-redirect-https.redirectscheme.permanent=true"
-        - "traefik.http.routers.reading-prod-http.rule=Host(`reading.a007.bid`)"
+        - "traefik.http.routers.reading-prod-http.rule=Host(`reading.run24.top`)"
         - "traefik.http.routers.reading-prod-http.entrypoints=web"
         - "traefik.http.routers.reading-prod-http.middlewares=reading-prod-redirect-https"
-        - "traefik.http.routers.reading-prod-https.rule=Host(`reading.a007.bid`)"
+        - "traefik.http.routers.reading-prod-https.rule=Host(`reading.run24.top`)"
         - "traefik.http.routers.reading-prod-https.entrypoints=websecure"
         - "traefik.http.routers.reading-prod-https.tls=true"
         - "traefik.http.routers.reading-prod-https.tls.certresolver=myresolver"

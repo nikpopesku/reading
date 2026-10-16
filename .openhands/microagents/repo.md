@@ -36,7 +36,7 @@ Personal reading tracker built with Django.
 ## Environments
 | Env | URL | Host | Stack name |
 |-----|-----|------|-----------|
-| Staging | https://readingstaging.a007.bid | Sirius VPS | `reading-staging` |
+| Staging | https://reading.a007.bid | Sirius VPS | `reading-staging` |
 | Production | — | Sirius VPS | — |
 
 ## Deploy flow (staging)
@@ -75,7 +75,7 @@ uv run python manage.py makemigrations --check --dry-run
 - **gh CLI** is authenticated via host config at `/root/.config/gh` — can trigger GitHub Actions, watch runs, create PRs
 - To trigger staging deploy manually: `gh workflow run deploy-staging.yml --ref master`
 - To watch a running deploy: `gh run watch`
-- To verify staging after deploy: `curl -sf https://readingstaging.a007.bid`
+- To verify staging after deploy: `curl -sf https://reading.a007.bid`
 
 ## Rule: Update this file at the end of every task
 Before marking any task as complete, you MUST update this file with everything new you discovered:
