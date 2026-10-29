@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.db.models import Count
+from django.db.models import Count, F
 from django.utils.html import format_html
 
 from .forms import AuthorForm, BookForm
@@ -19,9 +19,9 @@ class BookAdmin(admin.ModelAdmin):
         "finished_at",
         "rating",
     )
-    list_filter = ("status", "language", "rating")
+    list_filter = ("finished_at", "status", "language", "rating")
     search_fields = ("title", "author__name", "notes", "tags__name", "language__name")
-    ordering = ("status", "title")
+    ordering = (F("finished_at").desc(nulls_last=True), "title")
     autocomplete_fields = ("author", "language", "tags")
 
     @admin.display(description="Cover")
