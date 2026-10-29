@@ -53,12 +53,16 @@ These apply to every agent and developer, not only Cursor Cloud.
 
 For this Python/Django repository, apply the same readability principles using idiomatic Python: `_private_method` names, named dictionary keys or typed results instead of positional state, and small single-purpose methods. The PHP-specific phpmd/grumphp command applies only when PHP files and that toolchain are present; run the repository's Ruff and Django checks for Python changes. Never bypass commit hooks.
 
-## Branch naming
-- `feat/<short-slug>` — new features
-- `fix/<short-slug>` — bug fixes
-- `chore/<short-slug>` — tooling, deps, CI, config
-- `docs/<short-slug>` — documentation-only changes
-- Always branch from latest master: `git checkout master && git pull && git checkout -b <branch>`
+## Branch and pull request naming
+- For Jira-linked work, name the branch `<JIRA-KEY>-<short-description>`, for example `RD-26-author-duplicate-prevention`.
+- Start the PR title with the same Jira key: `<JIRA-KEY>: <description>`, for example `RD-26: Prevent duplicate author creation`.
+- Use the Jira key belonging to the actual task; do not invent a key or reuse an unrelated ticket. Include the Jira ticket URL in the PR description.
+- These rules apply to features, fixes, documentation, tooling, and CI changes. Do not use generic `feat/`, `fix/`, `docs/`, or `chore/` branch prefixes instead of the task key.
+- If no Jira ticket is associated with the work, confirm the intended task association or naming exception with the user before creating the branch or PR.
+- Start each new task on a fresh branch from the latest `master`: `git switch master && git pull --ff-only origin master && git switch -c <JIRA-KEY>-<short-description>`. Preserve local changes; never discard them to switch branches.
+- Never reuse a branch from a merged PR for a new task. Changes requested on an existing open PR stay on that PR's branch.
+- Keep conventional commit messages as described below; Jira-prefixed branches and PR titles do not change the commit format.
+- Open PRs for user review; never merge without explicit user approval.
 
 ## Commit format
 Conventional commits: `type(scope): short description`
