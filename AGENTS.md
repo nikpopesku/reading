@@ -36,12 +36,33 @@ make local-down  # docker compose down
 - Coverage: omit migrations, manage.py, asgi/wsgi
 - Clean diffs, no whitespace noise in PRs
 
-## Branch naming
-- `feat/<short-slug>` — new features
-- `fix/<short-slug>` — bug fixes
-- `chore/<short-slug>` — tooling, deps, CI, config
-- `docs/<short-slug>` — documentation-only changes
-- Always branch from latest master: `git checkout master && git pull && git checkout -b <branch>`
+## Code readability (all agents)
+
+These apply to every agent and developer, not only Cursor Cloud.
+
+- A public method should read as a short outline of the use case: a handful of calls to well-named private methods, not the implementation of every step inline.
+- Keep methods small and single-purpose. If a method mixes validating, fetching, looping and building a result, split it. Rough guide: one level of nesting per method, no loop bodies longer than a few lines, and at most 30 lines per method (phpmd `ExcessiveMethodLength`).
+- Extract each distinct step into a private method named for what it means in the domain (`assertAccepted`, `readCompanyId`, `isMainPlan`, `buildQuote`), not for how it is done.
+- Extract conditions into predicate methods (`isMainPlan($lineItem)`) instead of inline compound conditions or tuple/array shuffling.
+- Do not pass state around as positional arrays (`[$plan, $period, $properties]`). Use arrays with named keys (and an array-shape docblock) so call sites read clearly. Do not add new classes just to split up a method; add private methods.
+- Do not accumulate several unrelated variables (`$main`, `$inclusive`, ...) in one loop. Classify each item in a helper and return a typed result.
+- Keep long error messages and format strings out of the main flow, for example in named exception factory methods.
+- Target example: `read()` = assert accepted, read company id, collect line items into main plan and inclusive plan, validate they belong together, build the quote. Each of those is its own method.
+- When touching an existing long method, leave it more readable than you found it, within the scope of the ticket.
+- Before finishing, run `vendor/bin/phpmd <changed php files> text phpmd.xml` (cyclomatic complexity limit 10, NPath limit 200). Never commit with `-n` / `--no-verify`, it skips the grumphp pre-commit hook that runs phpmd.
+
+For this Python/Django repository, apply the same readability principles using idiomatic Python: `_private_method` names, named dictionary keys or typed results instead of positional state, and small single-purpose methods. The PHP-specific phpmd/grumphp command applies only when PHP files and that toolchain are present; run the repository's Ruff and Django checks for Python changes. Never bypass commit hooks.
+
+## Branch and pull request naming
+- For Jira-linked work, name the branch `<JIRA-KEY>-<short-description>`, for example `RD-26-author-duplicate-prevention`.
+- Start the PR title with the same Jira key: `<JIRA-KEY>: <description>`, for example `RD-26: Prevent duplicate author creation`.
+- Use the Jira key belonging to the actual task; do not invent a key or reuse an unrelated ticket. Include the Jira ticket URL in the PR description.
+- These rules apply to features, fixes, documentation, tooling, and CI changes. Do not use generic `feat/`, `fix/`, `docs/`, or `chore/` branch prefixes instead of the task key.
+- If no Jira ticket is associated with the work, confirm the intended task association or naming exception with the user before creating the branch or PR.
+- Start each new task on a fresh branch from the latest `master`: `git switch master && git pull --ff-only origin master && git switch -c <JIRA-KEY>-<short-description>`. Preserve local changes; never discard them to switch branches.
+- Never reuse a branch from a merged PR for a new task. Changes requested on an existing open PR stay on that PR's branch.
+- Keep conventional commit messages as described below; Jira-prefixed branches and PR titles do not change the commit format.
+- Open PRs for user review; never merge without explicit user approval.
 
 ## Commit format
 Conventional commits: `type(scope): short description`
