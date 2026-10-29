@@ -1,20 +1,25 @@
 {% load static %}
+{% with brand_asset='branding/open-book.svg' %}
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" sizes="any" href="{% static brand_asset %}">
     <title>{% block title %}Reading{% endblock %}</title>
     <meta name="description" content="{% block meta_description %}A personal reading tracker for books read, currently reading, and want to read.{% endblock %}">
     <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
     <meta property="og:title" content="{% block og_title %}Reading{% endblock %}">
     <meta property="og:description" content="{% block og_description %}A personal reading tracker for books read, currently reading, and want to read.{% endblock %}">
     <meta property="og:type" content="website">
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=github-link">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=rd27-brand">
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="{% url 'book-list' %}">Reading</a>
+      <a class="brand" href="{% url 'book-list' %}">
+        <img class="brand__logo" src="{% static brand_asset %}" width="32" height="32" alt="">
+        <span>Reading</span>
+      </a>
       <nav>
         <a class="github-link" href="https://github.com/nikpopesku/reading" target="_blank" rel="noopener noreferrer" aria-label="View Reading on GitHub">
           <svg class="github-link__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -29,3 +34,4 @@
     </main>
   </body>
 </html>
+{% endwith %}
