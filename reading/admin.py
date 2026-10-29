@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
 
-from .forms import BookForm
+from .forms import AuthorForm, BookForm
 from .models import Author, Book, Language, Tag
 
 
@@ -22,7 +22,7 @@ class BookAdmin(admin.ModelAdmin):
     list_filter = ("status", "language", "rating")
     search_fields = ("title", "author__name", "notes", "tags__name", "language__name")
     ordering = ("status", "title")
-    autocomplete_fields = ("language", "tags")
+    autocomplete_fields = ("author", "language", "tags")
 
     @admin.display(description="Cover")
     def cover_thumbnail(self, obj):
@@ -40,6 +40,7 @@ class BookAdmin(admin.ModelAdmin):
 
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):
+    form = AuthorForm
     list_display = ("name", "book_count")
     search_fields = ("name",)
     ordering = ("name",)
