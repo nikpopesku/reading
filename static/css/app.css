@@ -16,7 +16,25 @@ a:hover { text-decoration: underline; }
   min-height: 64px;
   padding: 0 32px;
 }
-.brand { color: #172026; font-size: 22px; font-weight: 700; }
+.brand {
+  align-items: center;
+  color: #172026;
+  display: inline-flex;
+  font-size: 22px;
+  font-weight: 700;
+  gap: 10px;
+}
+.brand__logo {
+  display: block;
+  flex: 0 0 32px;
+  height: 32px;
+  width: 32px;
+}
+.brand:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid #245d63;
+  outline-offset: 4px;
+}
 .github-link {
   align-items: center;
   background: #172026;
