@@ -36,6 +36,23 @@ make local-down  # docker compose down
 - Coverage: omit migrations, manage.py, asgi/wsgi
 - Clean diffs, no whitespace noise in PRs
 
+## Code readability (all agents)
+
+These apply to every agent and developer, not only Cursor Cloud.
+
+- A public method should read as a short outline of the use case: a handful of calls to well-named private methods, not the implementation of every step inline.
+- Keep methods small and single-purpose. If a method mixes validating, fetching, looping and building a result, split it. Rough guide: one level of nesting per method, no loop bodies longer than a few lines, and at most 30 lines per method (phpmd `ExcessiveMethodLength`).
+- Extract each distinct step into a private method named for what it means in the domain (`assertAccepted`, `readCompanyId`, `isMainPlan`, `buildQuote`), not for how it is done.
+- Extract conditions into predicate methods (`isMainPlan($lineItem)`) instead of inline compound conditions or tuple/array shuffling.
+- Do not pass state around as positional arrays (`[$plan, $period, $properties]`). Use arrays with named keys (and an array-shape docblock) so call sites read clearly. Do not add new classes just to split up a method; add private methods.
+- Do not accumulate several unrelated variables (`$main`, `$inclusive`, ...) in one loop. Classify each item in a helper and return a typed result.
+- Keep long error messages and format strings out of the main flow, for example in named exception factory methods.
+- Target example: `read()` = assert accepted, read company id, collect line items into main plan and inclusive plan, validate they belong together, build the quote. Each of those is its own method.
+- When touching an existing long method, leave it more readable than you found it, within the scope of the ticket.
+- Before finishing, run `vendor/bin/phpmd <changed php files> text phpmd.xml` (cyclomatic complexity limit 10, NPath limit 200). Never commit with `-n` / `--no-verify`, it skips the grumphp pre-commit hook that runs phpmd.
+
+For this Python/Django repository, apply the same readability principles using idiomatic Python: `_private_method` names, named dictionary keys or typed results instead of positional state, and small single-purpose methods. The PHP-specific phpmd/grumphp command applies only when PHP files and that toolchain are present; run the repository's Ruff and Django checks for Python changes. Never bypass commit hooks.
+
 ## Branch naming
 - `feat/<short-slug>` — new features
 - `fix/<short-slug>` — bug fixes
