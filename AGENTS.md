@@ -16,7 +16,39 @@ make migrate     # docker compose exec web python manage.py migrate
 make shell       # docker compose exec web sh
 make local-up    # docker compose up -d --build
 make local-down  # docker compose down
+uv sync          # install dependencies (also fetches Python 3.14 if missing)
 ```
+
+Always run `make lint` and `make test` before committing. If `uv` isn't on PATH, install it with
+`curl -LsSf https://astral.sh/uv/install.sh | sh` and add `~/.local/bin` to PATH.
+
+Any bare `manage.py` command outside Docker Compose (`test`, `check`, `makemigrations`, ...) needs
+`export DJANGO_DEBUG=1`. Without it `DEBUG` is `False` and Django raises
+`RuntimeError: DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is disabled`; there is no `.env`
+auto-loading.
+
+## Project structure
+```
+reading/            # Django app: models, views (book_list with filtering/pagination), forms,
+                    #   admin, tests.py (all tests), templatetags/, migrations/
+reading_project/    # Django project config: settings.py (reads env vars), urls.py
+templates/reading/  # HTML templates
+static/css/         # app.css
+```
+
+## Key model facts
+- `Book` statuses: `will_read`, `reading`, `read`, `deleted` (deleted is hidden from the UI)
+- `rating`: decimal 1-10 in steps of 0.5, nullable
+- Default ordering: `["status", "title"]`
+- Generate migrations with `uv run python manage.py makemigrations`
+
+## Environment variables
+| Variable | Required | Notes |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | only if `DJANGO_DEBUG` is unset/0 | otherwise raises `RuntimeError` on startup |
+| `DJANGO_DEBUG` | **yes, for any bare `manage.py` command** | `1` auto-supplies a placeholder `SECRET_KEY` |
+| `DATABASE_URL` | no | omit to use SQLite (independent of `DJANGO_DEBUG`) |
+| `DJANGO_ALLOWED_HOSTS` | no | comma-separated |
 
 ## Deployment
 - Staging (Sirius): on push to master via deploy-staging.yml
@@ -29,12 +61,15 @@ make local-down  # docker compose down
   new migration or static asset. The container's entrypoint runs `migrate`
   and `collectstatic` on every start (`RUN_STARTUP_TASKS=1`) so the DB schema
   and served CSS/JS can't drift behind the code on disk the way staging/prod
-  would if a deploy step were skipped.
+  would if a deploy step were skipped. If orion 500s with a missing relation or serves stale
+  CSS/JS, restart the container (`make orion-up`) or run `make orion-migrate` /
+  `make orion-collectstatic` rather than editing the DB by hand.
 
 ## Code style
 - Ruff: line-length 100, target py314, select E/F/I/UP/B/DJ, ignore DJ001
 - Coverage: omit migrations, manage.py, asgi/wsgi
 - Clean diffs, no whitespace noise in PRs
+- No comments unless the WHY is non-obvious; no docstrings on obvious methods
 
 ## Code readability (all agents)
 
@@ -62,7 +97,17 @@ For this Python/Django repository, apply the same readability principles using i
 - Start each new task on a fresh branch from the latest `master`: `git switch master && git pull --ff-only origin master && git switch -c <JIRA-KEY>-<short-description>`. Preserve local changes; never discard them to switch branches.
 - Never reuse a branch from a merged PR for a new task. Changes requested on an existing open PR stay on that PR's branch.
 - Keep conventional commit messages as described below; Jira-prefixed branches and PR titles do not change the commit format.
+- Main branch is `master`. One ticket per branch; never mix concerns.
 - Open PRs for user review; never merge without explicit user approval.
+- CI runs against PostgreSQL (`postgres:17-alpine`), including `makemigrations --check --dry-run`.
+  Local SQLite passing does not guarantee CI passes. After pushing, check `gh pr checks --watch`
+  before treating the PR as done; if a check fails, convert the PR to draft
+  (`gh pr ready --undo`) and note the failure in the PR body.
+
+## Jira status flow
+- Move the ticket to **In Progress** when you start work on it.
+- Move it to **In Review** as soon as the PR is open.
+- Leave **Done** to the user; do not move a ticket to Done yourself.
 
 ## Commit format
 Conventional commits: `type(scope): short description`
@@ -78,7 +123,8 @@ If no scope is applicable, omit it: `fix: correct typo in error message`.
 
 ## Local test environment (without full Docker stack)
 
-Tests need a running PostgreSQL. If Docker is available:
+With no `DATABASE_URL` set, settings fall back to SQLite and tests run without any setup. To match
+CI and test against PostgreSQL, if Docker is available:
 
 1. Start only the database: `docker compose -f docker-compose-local.yml --env-file .env.local up -d postgres`
 2. Create `.env.local` with these vars if not already present:

@@ -1,5 +1,5 @@
-FROM ghcr.io/astral-sh/uv:0.9.16 AS uv
-FROM python:3.14.5-slim AS runtime
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
+FROM python:3.14.10-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1     UV_COMPILE_BYTECODE=1     UV_LINK_MODE=copy     PATH="/app/.venv/bin:$PATH"
 
