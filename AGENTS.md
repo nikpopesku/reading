@@ -52,7 +52,7 @@ static/css/         # app.css
 
 ## Deployment
 - Staging (Sirius): on push to master via deploy-staging.yml
-- Production (Titan): manual via workflow_dispatch (deploy-prod.yml)
+- Production (Titan): only from a `v*` git tag on master via deploy-prod.yml (see "Releasing to prod")
 - Docker Swarm with Traefik + Let's Encrypt
 - Images: ghcr.io/nikpopesku/reading-web
 - Orion: no deploy pipeline — `docker-compose-orion.yml` bind-mounts this
@@ -64,6 +64,22 @@ static/css/         # app.css
   would if a deploy step were skipped. If orion 500s with a missing relation or serves stale
   CSS/JS, restart the container (`make orion-up`) or run `make orion-migrate` /
   `make orion-collectstatic` rather than editing the DB by hand.
+
+## Releasing to prod
+Same flow as the PE repos. A tag ships **everything merged so far**, not only your ticket.
+
+1. Merge your PR and wait for the staging deploy on the merge commit to go green.
+2. Tag and push (today's date plus a counter):
+   ```bash
+   git fetch origin && git tag -a v2026.10.30.1 -m "RD-x, RD-y" origin/master && git push origin v2026.10.30.1
+   ```
+3. The tag push runs `deploy-prod.yml`. It fails before building if the commit isn't on `master` or is
+   older than what is live. Deploys queue and never cancel each other. On success it creates a GitHub
+   release for the tag and posts the released commits to Slack `#release`.
+4. Rollback or redeploy:
+   `gh workflow run deploy-prod.yml -f tag=<older-tag> -f rollback=true`.
+
+Agents open PRs but never push release tags; tagging is the user's call.
 
 ## Code style
 - Ruff: line-length 100, target py314, select E/F/I/UP/B/DJ, ignore DJ001
@@ -105,8 +121,9 @@ For this Python/Django repository, apply the same readability principles using i
   (`gh pr ready --undo`) and note the failure in the PR body.
 
 ## Jira status flow
-- Move the ticket to **In Progress** when you start work on it.
-- Move it to **In Review** as soon as the PR is open.
+- Move the ticket to **In Progress** when you start work on it, unprompted (RD-32 did this via the
+  Atlassian MCP `transitionJiraIssue`: transition id `21` = In Progress, `31` = In Review).
+- Move it to **In Review** as soon as the PR is open, also unprompted.
 - Leave **Done** to the user; do not move a ticket to Done yourself.
 
 ## Commit format
