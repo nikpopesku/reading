@@ -5,10 +5,12 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
+from django.shortcuts import resolve_url
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -469,5 +471,23 @@ class BookViewTests(TestCase):
     def test_admin_login_is_available(self):
         response = self.client.get(reverse("admin:index"))
 
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
+
+    def test_auth_redirect_settings_resolve(self):
+        self.assertEqual(resolve_url(settings.LOGIN_URL), reverse("admin:login"))
+        self.assertEqual(resolve_url(settings.LOGOUT_REDIRECT_URL), reverse("admin:login"))
+
+    def test_admin_logout_redirects_to_login_and_ends_session(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="logout-admin", email="logout@example.invalid", password="test-pass"
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.post(reverse("admin:logout"))
+
+        self.assertRedirects(response, reverse("admin:login"), fetch_redirect_response=False)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 302)
         self.assertIn("/admin/login/", response["Location"])
