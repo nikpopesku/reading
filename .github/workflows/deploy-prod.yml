@@ -1,17 +1,108 @@
 name: Deploy Production
 
+# RD-32: prod is released only from a `v*` git tag on master
+# (`git tag -a vYYYY.MM.DD.N -m "RD-x, RD-y" origin/master && git push origin <tag>`).
+# workflow_dispatch redeploys an existing tag; `rollback` allows one older than what is live.
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to deploy (e.g. v2026.10.30.1)'
+        required: true
+        type: string
+      rollback:
+        description: 'Allow deploying a tag older than the one live on prod'
+        required: false
+        type: boolean
+        default: false
+
+# One prod deploy at a time, queued in order; never cancel a running deploy
+# (it may be mid-migration or mid `docker stack deploy`).
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      live_sha: ${{ steps.live.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag
+        id: resolve
+        run: |
+          git fetch --force --tags origin
+          SHA=$(git rev-parse --verify "refs/tags/$TAG^{commit}") || { echo "::error::Tag $TAG not found"; exit 1; }
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "$TAG -> $SHA"
+
+      - name: Tag must be on master
+        env:
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          git merge-base --is-ancestor "$SHA" origin/master \
+            || { echo "::error::$TAG ($SHA) is not on master. Only tag merged commits."; exit 1; }
+
+      # The live release is the tag in reading_web's image (reading-web:<tag>@sha256:...).
+      # Deploys before RD-32 used prod-<sha>, which carries the commit directly.
+      - name: Tag must be newer than what is live
+        id: live
+        env:
+          SHA: ${{ steps.resolve.outputs.sha }}
+          ROLLBACK: ${{ inputs.rollback || false }}
+          SSH_KEY: ${{ secrets.TITAN_SSH_KEY }}
+          TITAN_HOST: ${{ secrets.TITAN_HOST }}
+          TITAN_USER: ${{ secrets.TITAN_USER }}
+        run: |
+          install -m 600 /dev/null ~/ssh_key && printf '%s\n' "$SSH_KEY" > ~/ssh_key
+          IMAGE=$(ssh -i ~/ssh_key -o StrictHostKeyChecking=accept-new "$TITAN_USER@$TITAN_HOST" \
+            "docker service inspect reading_web --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'" || true)
+          rm -f ~/ssh_key
+          LIVE_TAG=$(printf '%s' "${IMAGE%@*}" | sed -n 's/.*:\([^:]*\)$/\1/p')
+          DEPLOYED=""
+          case "$LIVE_TAG" in
+            v*) DEPLOYED=$(git rev-parse --verify -q "refs/tags/$LIVE_TAG^{commit}" || true) ;;
+            prod-*) DEPLOYED=$(git rev-parse --verify -q "${LIVE_TAG#prod-}^{commit}" || true) ;;
+          esac
+          echo "Live: ${IMAGE:-unknown} (${DEPLOYED:-unknown}), deploying: $TAG ($SHA)"
+          echo "sha=$DEPLOYED" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$DEPLOYED" ] || ! git merge-base --is-ancestor "$DEPLOYED" origin/master 2>/dev/null; then
+            echo "::warning::Live release ${LIVE_TAG:-unknown} is not a commit on master; skipping the ordering check."
+          elif [ "$DEPLOYED" = "$SHA" ]; then
+            echo "Redeploying the live commit."
+          elif git merge-base --is-ancestor "$DEPLOYED" "$SHA"; then
+            echo "$TAG is newer than what is live."
+          elif [ "$ROLLBACK" = "true" ]; then
+            echo "::warning::Rolling back from $LIVE_TAG to $TAG."
+          else
+            echo "::error::$TAG is older than what is live ($LIVE_TAG). Re-run via workflow_dispatch with rollback=true to roll back."
+            exit 1
+          fi
+
   build-and-deploy:
     runs-on: ubuntu-latest
+    needs: guard
     environment: prod
     permissions:
       contents: read
       packages: write
     env:
-      IMAGE_TAG: prod-${{ github.sha }}
+      IMAGE_TAG: ${{ inputs.tag || github.ref_name }}
       PROD_DB_NAME: reading
       PROD_DB_USER: reading
       DJANGO_SECRET_KEY_SECRET_NAME: reading_django_secret_key_${{ github.run_id }}_${{ github.run_attempt }}
@@ -19,6 +110,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ needs.guard.outputs.sha }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4.2.0
@@ -149,11 +242,28 @@ jobs:
             docker exec "$web_container" python manage.py migrate --noinput
             docker service ls --filter label=com.docker.stack.namespace=reading
 
-  notify:
+  release:
     runs-on: ubuntu-latest
     needs: build-and-deploy
     permissions:
-      actions: read
+      contents: write
+    steps:
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists (redeploy/rollback)."
+          else
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --generate-notes --verify-tag
+          fi
+
+  notify:
+    runs-on: ubuntu-latest
+    needs:
+      - guard
+      - release
+    permissions:
       contents: read
     steps:
       - uses: actions/checkout@v6.0.2
@@ -163,8 +273,8 @@ jobs:
       - name: Notify Slack
         env:
           SLACK_DEPLOY_WEBHOOK_URL: ${{ secrets.SLACK_DEPLOY_WEBHOOK_URL }}
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.sha }}
+          SHA: ${{ needs.guard.outputs.sha }}
+          LIVE_SHA: ${{ needs.guard.outputs.live_sha }}
         run: |
           if [ -z "$SLACK_DEPLOY_WEBHOOK_URL" ]; then
             echo "::warning::SLACK_DEPLOY_WEBHOOK_URL is not set; skipping the Slack notification."
@@ -172,17 +282,15 @@ jobs:
           fi
           REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
-          # Latest successful run other than this one. Filter in jq: the API's status=success filter
-          # once returned a run from months earlier and listed every commit since.
-          OTHER_OK="(.conclusion == \"success\" and .id != $GITHUB_RUN_ID)"
-          LATEST_OK="[.workflow_runs[] | select$OTHER_OK][0].head_sha // empty"
-          PREV=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy-prod.yml/runs?per_page=50" \
-            --jq "$LATEST_OK" || true)
-          echo "Previous prod deploy: ${PREV:-unknown}, deploying: $SHA"
-          if [ -n "$PREV" ] && git merge-base --is-ancestor "$PREV" "$SHA" 2>/dev/null; then
-            RANGE="$PREV..$SHA"
+          if [ -n "$LIVE_SHA" ] && git merge-base --is-ancestor "$LIVE_SHA" "$SHA" 2>/dev/null; then
+            RANGE="$LIVE_SHA..$SHA"; ACTION="deployed to prod"; BULLET="•"
+          elif [ -n "$LIVE_SHA" ] && git merge-base --is-ancestor "$SHA" "$LIVE_SHA" 2>/dev/null; then
+            RANGE="$SHA..$LIVE_SHA"; ACTION="rolled back on prod, reverting"; BULLET="↩"
           else
-            RANGE="-1 $SHA"
+            # Live commit unknown: fall back to the previous release tag.
+            PREV=$(git describe --tags --abbrev=0 --match 'v*' "$SHA^" 2>/dev/null || true)
+            RANGE="${PREV:+$PREV..}$SHA"; ACTION="deployed to prod"; BULLET="•"
+            [ -n "$PREV" ] || RANGE="-1 $SHA"
           fi
 
           # One line per commit: escape Slack control chars, link ticket keys to Jira and (#n) to the PR.
@@ -191,7 +299,7 @@ jobs:
             | sed -E -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \
                   -e 's#\b(RD|PE)-[0-9]+\b#<https://885nik.atlassian.net/browse/&|&>#g' \
                   -e "s#\(\#([0-9]+)\)#(<$REPO_URL/pull/\1|\#\1>)#" \
-                  -e 's/^/• /')
+                  -e "s/^/$BULLET /")
           [ -n "$CHANGES" ] || CHANGES="_No new commits (redeploy)._"
           TOTAL=$(printf '%s\n' "$CHANGES" | wc -l)
           if [ "$TOTAL" -gt 30 ]; then
@@ -199,7 +307,7 @@ jobs:
           fi
 
           RUN="<$REPO_URL/actions/runs/$GITHUB_RUN_ID|run>"
-          HEADER=":rocket: *${GITHUB_REPOSITORY#*/}* <$REPO_URL/commit/$SHA|${SHA:0:7}> deployed to prod ($RUN)"
+          HEADER=":rocket: *${GITHUB_REPOSITORY#*/}* <$REPO_URL/releases/tag/$TAG|$TAG> $ACTION ($RUN)"
           printf '%s\n%s\n' "$HEADER" "$CHANGES"
           jq -n --arg text "$HEADER"$'\n'"$CHANGES" '{text: $text}' \
             | curl -sS --fail-with-body -X POST -H 'Content-type: application/json' \
