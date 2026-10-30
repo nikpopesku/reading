@@ -64,6 +64,11 @@ For this Python/Django repository, apply the same readability principles using i
 - Keep conventional commit messages as described below; Jira-prefixed branches and PR titles do not change the commit format.
 - Open PRs for user review; never merge without explicit user approval.
 
+## Jira status flow
+- Move the ticket to **In Progress** when you start work on it.
+- Move it to **In Review** as soon as the PR is open.
+- Leave **Done** to the user; do not move a ticket to Done yourself.
+
 ## Commit format
 Conventional commits: `type(scope): short description`
 
