@@ -148,3 +148,59 @@ jobs:
 
             docker exec "$web_container" python manage.py migrate --noinput
             docker service ls --filter label=com.docker.stack.namespace=reading
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Notify Slack
+        env:
+          SLACK_DEPLOY_WEBHOOK_URL: ${{ secrets.SLACK_DEPLOY_WEBHOOK_URL }}
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$SLACK_DEPLOY_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_DEPLOY_WEBHOOK_URL is not set; skipping the Slack notification."
+            exit 0
+          fi
+          REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+
+          # Latest successful run other than this one. Filter in jq: the API's status=success filter
+          # once returned a run from months earlier and listed every commit since.
+          OTHER_OK="(.conclusion == \"success\" and .id != $GITHUB_RUN_ID)"
+          LATEST_OK="[.workflow_runs[] | select$OTHER_OK][0].head_sha // empty"
+          PREV=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy-prod.yml/runs?per_page=50" \
+            --jq "$LATEST_OK" || true)
+          echo "Previous prod deploy: ${PREV:-unknown}, deploying: $SHA"
+          if [ -n "$PREV" ] && git merge-base --is-ancestor "$PREV" "$SHA" 2>/dev/null; then
+            RANGE="$PREV..$SHA"
+          else
+            RANGE="-1 $SHA"
+          fi
+
+          # One line per commit: escape Slack control chars, link ticket keys to Jira and (#n) to the PR.
+          # shellcheck disable=SC2086
+          CHANGES=$(git log --no-merges --format='%s' $RANGE \
+            | sed -E -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \
+                  -e 's#\b(RD|PE)-[0-9]+\b#<https://885nik.atlassian.net/browse/&|&>#g' \
+                  -e "s#\(\#([0-9]+)\)#(<$REPO_URL/pull/\1|\#\1>)#" \
+                  -e 's/^/• /')
+          [ -n "$CHANGES" ] || CHANGES="_No new commits (redeploy)._"
+          TOTAL=$(printf '%s\n' "$CHANGES" | wc -l)
+          if [ "$TOTAL" -gt 30 ]; then
+            CHANGES="$(printf '%s\n' "$CHANGES" | head -30)"$'\n'"_…and $((TOTAL - 30)) more_"
+          fi
+
+          RUN="<$REPO_URL/actions/runs/$GITHUB_RUN_ID|run>"
+          HEADER=":rocket: *${GITHUB_REPOSITORY#*/}* <$REPO_URL/commit/$SHA|${SHA:0:7}> deployed to prod ($RUN)"
+          printf '%s\n%s\n' "$HEADER" "$CHANGES"
+          jq -n --arg text "$HEADER"$'\n'"$CHANGES" '{text: $text}' \
+            | curl -sS --fail-with-body -X POST -H 'Content-type: application/json' \
+                --data @- "$SLACK_DEPLOY_WEBHOOK_URL"
