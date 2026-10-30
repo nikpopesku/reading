@@ -125,9 +125,9 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-LOGIN_URL = "login"
+LOGIN_URL = "admin:login"
 LOGIN_REDIRECT_URL = "book-list"
-LOGOUT_REDIRECT_URL = "login"
+LOGOUT_REDIRECT_URL = "admin:login"
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = not DEBUG
